@@ -19,6 +19,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:gravity="center"
         android:fontFamily="@font/roboto"
+        android:textColor="@color/black"
         android:textSize="30dp"
         app:layout_constraintVertical_bias="0.044" />
 
@@ -48,12 +49,14 @@
                 android:gravity="center">
 
                 <ImageButton
+                    android:id="@+id/btnDashboard"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:src="@drawable/dashboard"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:scaleType="fitCenter" />
+                    android:onClick="onClick"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/dashboard" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -61,6 +64,7 @@
                     android:text="Dashboard"
                     android:gravity="center"
                     android:fontFamily="@font/roboto"
+                    android:textColor="@color/black"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -94,6 +98,7 @@
                     android:text="Statistics"
                     android:gravity="center"
                     android:fontFamily="@font/roboto"
+                    android:textColor="@color/black"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -127,6 +132,7 @@
                     android:text="Engine Faults"
                     android:gravity="center"
                     android:fontFamily="@font/roboto"
+                    android:textColor="@color/black"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -160,6 +166,7 @@
                     android:text="Settings"
                     android:gravity="center"
                     android:fontFamily="@font/roboto"
+                    android:textColor="@color/black"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
