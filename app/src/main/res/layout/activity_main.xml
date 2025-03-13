@@ -9,7 +9,7 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:layout_width="150dp"
+        android:layout_width="300dp"
         android:layout_height="55dp"
         android:text="Obd2 Scanner"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -18,6 +18,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         android:gravity="center"
+        android:fontFamily="@font/roboto"
+        android:textSize="30dp"
         app:layout_constraintVertical_bias="0.044" />
 
     <GridLayout
@@ -33,10 +35,11 @@
         <androidx.cardview.widget.CardView
             android:layout_height="0dp"
             android:layout_width="0dp"
-            app:cardCornerRadius="0dp"
+            app:cardCornerRadius="15dp"
+            android:backgroundTint="#f3f3f3"
             android:layout_rowWeight="1"
             android:layout_columnWeight="1"
-            android:layout_margin="5dp">
+            android:layout_margin="15dp">
             
             <LinearLayout
                 android:layout_width="match_parent"
@@ -57,6 +60,7 @@
                     android:layout_height="wrap_content"
                     android:text="Dashboard"
                     android:gravity="center"
+                    android:fontFamily="@font/roboto"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -65,9 +69,10 @@
             android:layout_height="0dp"
             android:layout_width="0dp"
             app:cardCornerRadius="15dp"
+            android:backgroundTint="#f3f3f3"
             android:layout_rowWeight="1"
             android:layout_columnWeight="1"
-            android:layout_margin="5dp">
+            android:layout_margin="15dp">
             
             <LinearLayout
                 android:layout_width="match_parent"
@@ -86,8 +91,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Chat"
+                    android:text="Statistics"
                     android:gravity="center"
+                    android:fontFamily="@font/roboto"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -99,7 +105,7 @@
             android:backgroundTint="#f3f3f3"
             android:layout_rowWeight="1"
             android:layout_columnWeight="1"
-            android:layout_margin="5dp">
+            android:layout_margin="15dp">
             
             <LinearLayout
                 android:layout_width="match_parent"
@@ -118,8 +124,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Engine"
+                    android:text="Engine Faults"
                     android:gravity="center"
+                    android:fontFamily="@font/roboto"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -128,9 +135,10 @@
             android:layout_height="0dp"
             android:layout_width="0dp"
             app:cardCornerRadius="15dp"
+            android:backgroundTint="#f3f3f3"
             android:layout_rowWeight="1"
             android:layout_columnWeight="1"
-            android:layout_margin="5dp">
+            android:layout_margin="15dp">
             
             <LinearLayout
                 android:layout_width="match_parent"
@@ -149,8 +157,9 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Gears"
+                    android:text="Settings"
                     android:gravity="center"
+                    android:fontFamily="@font/roboto"
                     android:paddingTop="8dp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
