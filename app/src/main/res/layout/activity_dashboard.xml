@@ -55,8 +55,6 @@
         android:layout_marginStart="80dp"
         android:layout_marginTop="236dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:sv_maxSpeed="6"
-        app:sv_sectionStyle="BUTT" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
