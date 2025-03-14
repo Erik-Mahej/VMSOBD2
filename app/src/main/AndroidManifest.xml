@@ -13,9 +13,18 @@
         android:theme="@style/Theme.VMSOBD2"
         tools:targetApi="31">
         <activity
-            android:name=".Dashboard"
-            android:parentActivityName=".MainActivity"
+            android:name=".appSettings"
             android:exported="false" />
+        <activity
+            android:name=".EngineFaults"
+            android:exported="false" />
+        <activity
+            android:name=".CarStatistics"
+            android:exported="false" />
+        <activity
+            android:name=".cardashboard"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

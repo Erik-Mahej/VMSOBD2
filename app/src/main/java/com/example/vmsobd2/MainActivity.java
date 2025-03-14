@@ -24,9 +24,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    public void onClick(View view) {
+    public void Transport(View view) {
         if (view.getId() == R.id.btnDashboard) {
-            Intent intentDashboard = new Intent(MainActivity.this, Dashboard.class);
+            Intent intentDashboard = new Intent(MainActivity.this, cardashboard.class);
+            startActivity(intentDashboard);
+        }else if (view.getId() == R.id.btnStats) {
+            Intent intentDashboard = new Intent(MainActivity.this, CarStatistics.class);
+            startActivity(intentDashboard);
+        }else if (view.getId() == R.id.btnEngineFaults) {
+            Intent intentDashboard = new Intent(MainActivity.this, EngineFaults.class);
+            startActivity(intentDashboard);
+        }else if (view.getId() == R.id.btnSettings) {
+            Intent intentDashboard = new Intent(MainActivity.this, appSettings.class);
             startActivity(intentDashboard);
         }
     }

@@ -6,12 +6,11 @@ import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-public class Dashboard extends AppCompatActivity {
+public class cardashboard extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,10 +24,11 @@ public class Dashboard extends AppCompatActivity {
         });
     }
 
-    public void onClick(View view) {
+    public void goBack(View view) {
         if (view.getId() == R.id.btnBack) {
-            Intent intentMain = new Intent(Dashboard.this, MainActivity.class);
+            Intent intentMain = new Intent(cardashboard.this, MainActivity.class);
             startActivity(intentMain);
         }
+        finish();
     }
 }

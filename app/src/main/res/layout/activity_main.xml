@@ -66,7 +66,7 @@
                     android:layout_height="0dp"
                     android:layout_weight="1"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:onClick="onClick"
+                    android:onClick="Transport"
                     android:scaleType="fitCenter"
                     android:src="@drawable/dashboard" />
 
@@ -97,12 +97,14 @@
                 android:gravity="center">
 
                 <ImageButton
+                    android:id="@+id/btnStats"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:src="@drawable/chat_arrow_grow"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:scaleType="fitCenter" />
+                    android:onClick="Transport"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/chat_arrow_grow" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -131,12 +133,14 @@
                 android:gravity="center">
 
                 <ImageButton
+                    android:id="@+id/btnEngineFaults"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:src="@drawable/engine"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:scaleType="fitCenter" />
+                    android:onClick="Transport"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/engine" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -165,12 +169,14 @@
                 android:gravity="center">
 
                 <ImageButton
+                    android:id="@+id/btnSettings"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:src="@drawable/gears"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:scaleType="fitCenter" />
+                    android:onClick="Transport"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/gears" />
 
                 <TextView
                     android:layout_width="wrap_content"
