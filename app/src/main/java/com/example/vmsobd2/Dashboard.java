@@ -6,6 +6,7 @@ import android.view.View;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -23,10 +24,11 @@ public class Dashboard extends AppCompatActivity {
             return insets;
         });
     }
+
     public void onClick(View view) {
-        if (view.getId() == R.id.btnDashboard) {
-            Intent intentDruhaAktivita = new Intent(Dashboard.this, MainActivity.class);
-            startActivity(intentDruhaAktivita);
+        if (view.getId() == R.id.btnBack) {
+            Intent intentMain = new Intent(Dashboard.this, MainActivity.class);
+            startActivity(intentMain);
         }
     }
 }

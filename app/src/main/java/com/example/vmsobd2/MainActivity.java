@@ -26,8 +26,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClick(View view) {
         if (view.getId() == R.id.btnDashboard) {
-            Intent intentDruhaAktivita = new Intent(MainActivity.this, Dashboard.class);
-            startActivity(intentDruhaAktivita);
+            Intent intentDashboard = new Intent(MainActivity.this, Dashboard.class);
+            startActivity(intentDashboard);
         }
     }
 }
