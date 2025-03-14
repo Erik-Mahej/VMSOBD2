@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-    tools:context=".cardashboard">
+    tools:context=".carDashboard">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"

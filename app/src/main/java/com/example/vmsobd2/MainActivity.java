@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void Transport(View view) {
         if (view.getId() == R.id.btnDashboard) {
-            Intent intentDashboard = new Intent(MainActivity.this, cardashboard.class);
+            Intent intentDashboard = new Intent(MainActivity.this, carDashboard.class);
             startActivity(intentDashboard);
         }else if (view.getId() == R.id.btnStats) {
             Intent intentDashboard = new Intent(MainActivity.this, CarStatistics.class);
@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
             Intent intentDashboard = new Intent(MainActivity.this, EngineFaults.class);
             startActivity(intentDashboard);
         }else if (view.getId() == R.id.btnSettings) {
-            Intent intentDashboard = new Intent(MainActivity.this, appSettings.class);
+            Intent intentDashboard = new Intent(MainActivity.this, AppSettings.class);
             startActivity(intentDashboard);
         }
     }

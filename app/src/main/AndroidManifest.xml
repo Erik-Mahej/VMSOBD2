@@ -13,7 +13,7 @@
         android:theme="@style/Theme.VMSOBD2"
         tools:targetApi="31">
         <activity
-            android:name=".appSettings"
+            android:name=".AppSettings"
             android:exported="false" />
         <activity
             android:name=".EngineFaults"
@@ -22,7 +22,7 @@
             android:name=".CarStatistics"
             android:exported="false" />
         <activity
-            android:name=".cardashboard"
+            android:name=".carDashboard"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
         <activity
