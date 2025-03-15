@@ -51,29 +51,89 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/chooseDeviceButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Choose Bluetooth Device"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintVertical_bias="0.5" />
 
-    <TextView
-        android:id="@+id/chosenDeviceTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="No device chosen"
-        android:textColor="#0D0D0D"
-        android:textSize="18sp"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <include
+        android:id="@+id/bottom_toolbar"
+        layout="@layout/bottom_toolbar"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+    <ScrollView
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/chooseDeviceButton"
-        app:layout_constraintVertical_bias="0.6" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/bottom_toolbar">
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="1"
+            android:rowCount="4">
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_rowWeight="1"
+                android:layout_columnWeight="1"
+                android:layout_margin="15dp"
+                android:backgroundTint="#f3f3f3"
+                app:cardCornerRadius="15dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+
+                    <Button
+                        android:id="@+id/chooseDeviceButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Choose Bluetooth Device"
+                        android:textColor="@color/white"
+                        app:layout_constraintTop_toBottomOf="@id/toolbar"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.5" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_rowWeight="1"
+                android:layout_columnWeight="1"
+                android:layout_margin="15dp"
+                android:backgroundTint="#f3f3f3"
+                app:cardCornerRadius="15dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/chosenDeviceTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="No device chosen"
+                        android:textColor="#0D0D0D"
+                        android:textSize="18sp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@id/chooseDeviceButton"
+                        app:layout_constraintVertical_bias="0.6" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+
+
+        </GridLayout>
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

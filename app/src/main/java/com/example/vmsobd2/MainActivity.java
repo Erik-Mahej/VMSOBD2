@@ -18,6 +18,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
+    private static boolean BTCN = false;
     private Bluetooth bluetooth;
     private TextView connectionStatus;
     private Button connectButton;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
             bluetooth.disconnect();
             connectButton.setText("Connect");
             connectionStatus.setText("OBD2 Status: Disconnected");
+            BTCN = false;
         } else {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             String deviceAddress = preferences.getString("selected_device_address", null);
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                 bluetooth.connect(deviceAddress);
                 if (bluetooth.isConnected()) {
                     connectButton.setText("Disconnect");
+                    BTCN = true;
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: No Device Selected");
@@ -80,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: Permission Denied");
-                Toast.makeText(this, "Bluetooth connection permission denied.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Bluetooth permission denied. Allow it in the aplication settings.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -88,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     public void Transport(View view) {
         if (view.getId() == R.id.btnDashboard) {
             Intent intentDashboard = new Intent(MainActivity.this, carDashboard.class);
+            intentDashboard.putExtra("EXTRA_SESSION_ID", BTCN);
             startActivity(intentDashboard);
         } else if (view.getId() == R.id.btnStats) {
             Intent intentDashboard = new Intent(MainActivity.this, CarStatistics.class);

@@ -2,6 +2,7 @@ package com.example.vmsobd2;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -10,6 +11,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import androidx.activity.EdgeToEdge;
@@ -129,7 +132,7 @@ public class carDashboard extends AppCompatActivity {
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: No Device Selected");
-                Toast.makeText(this, "No device selected.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -141,11 +144,34 @@ public class carDashboard extends AppCompatActivity {
         }
         finish();
     }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == Bluetooth.REQUEST_BLUETOOTH_CONNECT) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                String deviceAddress = preferences.getString("selected_device_address", null);
+                if (deviceAddress != null) {
+                    bluetooth.connect(deviceAddress);
+                    if (bluetooth.isConnected()) {
+                        connectButton.setText("Disconnect");
+                    }
+                } else {
+                    connectionStatus.setText("OBD2 Status: No Device Selected");
+                    Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                }
+            } else {
+                connectionStatus.setText("OBD2 Status: Permission Denied");
+                Toast.makeText(this, "Bluetooth permission denied. Allow it in the aplication settings.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         // Stop the handler when the activity is destroyed
         handler.removeCallbacks(rpmRequestRunnable);
+        bluetooth.disconnect();
     }
 }

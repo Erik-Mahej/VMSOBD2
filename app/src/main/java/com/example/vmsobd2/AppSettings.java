@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -34,7 +35,10 @@ public class AppSettings extends AppCompatActivity {
     private static final int REQUEST_BLUETOOTH_CONNECT = 1;
     private BluetoothAdapter bluetoothAdapter;
     private Button chooseDeviceButton;
+    private Bluetooth bluetooth;
     private TextView chosenDeviceTextView;
+    private TextView connectionStatus;
+    private Button connectButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +50,13 @@ public class AppSettings extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
+        connectionStatus = findViewById(R.id.connection_status);
+        connectButton = findViewById(R.id.btnConnect);
+
+        bluetooth = new Bluetooth(this, connectionStatus);
+
+        connectButton.setOnClickListener(v -> handleConnectButton());
 
         chooseDeviceButton = findViewById(R.id.chooseDeviceButton);
         chosenDeviceTextView = findViewById(R.id.chosenDeviceTextView);
@@ -77,17 +88,47 @@ public class AppSettings extends AppCompatActivity {
         loadChosenDevice();
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_BLUETOOTH_CONNECT) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                showDeviceChooserDialog();
-            } else {
-                Log.e(TAG, "BLUETOOTH_CONNECT permission denied");
+        @Override
+        public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+            if (requestCode == Bluetooth.REQUEST_BLUETOOTH_CONNECT) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                    String deviceAddress = preferences.getString("selected_device_address", null);
+                    if (deviceAddress != null) {
+                        bluetooth.connect(deviceAddress);
+                        if (bluetooth.isConnected()) {
+                            connectButton.setText("Disconnect");
+                        }
+                    } else {
+                        connectionStatus.setText("OBD2 Status: No Device Selected");
+                        Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    connectionStatus.setText("OBD2 Status: Permission Denied");
+                    Toast.makeText(this, "Bluetooth permission denied. Allow it in the aplication settings.", Toast.LENGTH_LONG).show();
+                }
             }
         }
-    }
+        private void handleConnectButton() {
+            if (bluetooth.isConnected()) {
+                bluetooth.disconnect();
+                connectButton.setText("Connect");
+                connectionStatus.setText("OBD2 Status: Disconnected");
+            } else {
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+                String deviceAddress = preferences.getString("selected_device_address", null);
+                if (deviceAddress != null) {
+                    bluetooth.connect(deviceAddress);
+                    if (bluetooth.isConnected()) {
+                        connectButton.setText("Disconnect");
+                    }
+                } else {
+                    connectionStatus.setText("OBD2 Status: No Device Selected");
+                    Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                }
+            }
+        }
 
     public void goBack(View view) {
         if (view.getId() == R.id.btnBack) {
@@ -141,4 +182,6 @@ public class AppSettings extends AppCompatActivity {
         String deviceAddress = preferences.getString("selected_device_address", "");
         chosenDeviceTextView.setText("Chosen Device: " + deviceName + " (" + deviceAddress + ")");
     }
+
+
 }
