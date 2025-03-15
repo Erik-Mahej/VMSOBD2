@@ -98,8 +98,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void Transport(View view) {
         Intent intent = null;
-        going = true; // Set this flag once since it's common for all cases
-
         int viewId = view.getId(); // Store the view ID in a variable
 
         if (viewId == R.id.btnDashboard) {
@@ -122,8 +120,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        bluetooth.disconnect(true);
+    }
+    @Override
     protected void onPause() {
         super.onPause();
-        bluetooth.disconnect(going);
+        bluetooth.disconnect(true);
     }
 }

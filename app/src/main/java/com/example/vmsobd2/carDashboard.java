@@ -152,7 +152,6 @@ public class carDashboard extends AppCompatActivity {
     public void goBack(View view) {
         if (view.getId() == R.id.btnBack) {
             Intent intent = new Intent(carDashboard.this, MainActivity.class);
-            going=true;
             intent.putExtra("BTCN", BTCN);
             startActivity(intent);
         }
@@ -186,11 +185,11 @@ public class carDashboard extends AppCompatActivity {
         super.onDestroy();
         // Stop the handler when the activity is destroyed
         handler.removeCallbacks(rpmRequestRunnable);
-        bluetooth.disconnect(going);
+        bluetooth.disconnect(true);
     }
     @Override
     protected void onPause() {
         super.onPause();
-        bluetooth.disconnect(going);
+        bluetooth.disconnect(true);
     }
 }

@@ -197,12 +197,12 @@ public class AppSettings extends AppCompatActivity {
         @Override
         protected void onDestroy() {
             super.onDestroy();
-            bluetooth.disconnect(going);
+            bluetooth.disconnect(true);
         }
         @Override
         protected void onPause() {
             super.onPause();
-            bluetooth.disconnect(going);
+            bluetooth.disconnect(true);
         }
 
 
