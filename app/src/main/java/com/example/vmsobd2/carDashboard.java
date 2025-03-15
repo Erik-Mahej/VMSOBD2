@@ -43,11 +43,14 @@ public class carDashboard extends AppCompatActivity {
 
         speedView1 = findViewById(R.id.speedView);
 
+
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+
 
         handler = new Handler();
         rpmRequestRunnable = new Runnable() {
@@ -75,12 +78,12 @@ public class carDashboard extends AppCompatActivity {
     }
 
     private void handleResponse(String response) {
+        Log.d("carDashboard", "Received response: " + response);
         try {
-            int rpm = decodeRPM(response); // Convert to decimal
-            updateRPMDisplay(rpm); // Update the UI with the RPM value
+            int rpm = decodeRPM(response);
+            updateRPMDisplay(rpm);
         } catch (Exception e) {
-            // Ignore all errors
-            Log.e("carDashboard", "Error: " + e.getMessage());
+            Log.e("carDashboard", "Error processing response: " + e.getMessage());
         }
     }
 
@@ -89,11 +92,23 @@ public class carDashboard extends AppCompatActivity {
     }
 
     public static int decodeRPM(String response) {
-        //odstraneni mezer
         String[] parts = response.split(" ");
-        String rpmHex1 = parts[3]; // 1 byte
-        String rpmHex2 = parts[4]; // 2 byte
 
+
+        if (parts.length < 5) {
+            Log.e("carDashboard", "Invalid response format. Expected at least 5 parts. Response: " + response);
+            throw new IllegalArgumentException("Invalid response format. Expected at least 5 parts.");
+        }
+        if (!parts[1].equals("41") || !parts[2].equals("0C")) {
+            Log.e("carDashboard", "Response is not for RPM request. Response: " + response);
+            throw new IllegalArgumentException("Response is not for RPM request.");
+        }
+
+        // Extract the RPM data (the next two bytes)
+        String rpmHex1 = parts[3]; // First byte
+        String rpmHex2 = parts[4]; // Second byte
+
+        // Combine the two bytes into a single hex string
         String combinedHex = (rpmHex1 + rpmHex2).trim();
 
         return Integer.parseInt(combinedHex, 16);
