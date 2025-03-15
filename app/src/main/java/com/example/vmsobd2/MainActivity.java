@@ -33,31 +33,33 @@ public class MainActivity extends AppCompatActivity {
 
         bluetooth = new Bluetooth(this, connectionStatus);
 
-        connectButton.setOnClickListener(v -> {
-            if (bluetooth.isConnected()) {
-                bluetooth.disconnect();
-                connectButton.setText("Connect");
-                connectionStatus.setText("OBD2 Status: Disconnected");
-            } else {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                String deviceAddress = preferences.getString("selected_device_address", null);
-                if (deviceAddress != null) {
-                    bluetooth.connect(deviceAddress);
-                    if (bluetooth.isConnected()) {
-                        connectButton.setText("Disconnect");
-                    }
-                } else {
-                    connectionStatus.setText("OBD2 Status: No Device Selected");
-                    Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
-                }
-            }
-        });
+        connectButton.setOnClickListener(v -> handleConnectButton());
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
+
+    private void handleConnectButton() {
+        if (bluetooth.isConnected()) {
+            bluetooth.disconnect();
+            connectButton.setText("Connect");
+            connectionStatus.setText("OBD2 Status: Disconnected");
+        } else {
+            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+            String deviceAddress = preferences.getString("selected_device_address", null);
+            if (deviceAddress != null) {
+                bluetooth.connect(deviceAddress);
+                if (bluetooth.isConnected()) {
+                    connectButton.setText("Disconnect");
+                }
+            } else {
+                connectionStatus.setText("OBD2 Status: No Device Selected");
+                Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override

@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 //zaklad teto tridy jsem si nechal vygenerovat s prompty
@@ -80,10 +81,10 @@ public class Bluetooth {
     public void sendCommand(String command) {
         if (isConnected && outputStream != null) {
             try {
-                outputStream.write(command.getBytes());
+                outputStream.write(command.getBytes(StandardCharsets.UTF_8)); // Specify encoding
                 outputStream.flush();
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(); // Consider logging instead
             }
         }
     }
@@ -93,9 +94,12 @@ public class Bluetooth {
             try {
                 byte[] buffer = new byte[1024];
                 int bytesRead = inputStream.read(buffer);
-                return new String(buffer, 0, bytesRead);
+                if (bytesRead == -1) {
+                    return null; // End of stream
+                }
+                return new String(buffer, 0, bytesRead, StandardCharsets.UTF_8); // Specify encoding
             } catch (IOException e) {
-                e.printStackTrace();
+                e.printStackTrace(); // Consider logging instead
             }
         }
         return null;
