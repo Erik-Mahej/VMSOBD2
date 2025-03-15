@@ -1,10 +1,15 @@
 package com.example.vmsobd2;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.widget.TextView;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -18,6 +23,7 @@ import java.util.UUID;
 //dal jsem dal prompt: can we handle all the communication logic with the obd2 scanner in this file because i have 5 different activities that i use
 //a doplnilo mi to logiku ale se spousty chyb
 public class Bluetooth {
+    public static final int REQUEST_BLUETOOTH_CONNECT = 1;
     private Context context;
     private TextView connectionStatus;
     private BluetoothAdapter bluetoothAdapter;
@@ -35,6 +41,11 @@ public class Bluetooth {
     }
 
     public void connect(String deviceAddress) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, REQUEST_BLUETOOTH_CONNECT);
+            return;
+        }
+
         BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
         connectionStatus.setText("OBD2 Status: Connecting...");
         try {
