@@ -39,6 +39,8 @@ public class AppSettings extends AppCompatActivity {
     private TextView chosenDeviceTextView;
     private TextView connectionStatus;
     private Button connectButton;
+    private static boolean going = false;
+    private static boolean BTCN = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +66,12 @@ public class AppSettings extends AppCompatActivity {
         if (chooseDeviceButton == null) {
             Log.e(TAG, "chooseDeviceButton is null");
             return;
+        }
+        Intent intent = getIntent();
+        boolean BTCN = intent.getBooleanExtra("BTCN", false);
+
+        if (BTCN) {
+            handleConnectButton();
         }
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -112,15 +120,17 @@ public class AppSettings extends AppCompatActivity {
         }
         private void handleConnectButton() {
             if (bluetooth.isConnected()) {
-                bluetooth.disconnect();
+                bluetooth.disconnect(going);
                 connectButton.setText("Connect");
                 connectionStatus.setText("OBD2 Status: Disconnected");
+                BTCN = false;
             } else {
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
                 String deviceAddress = preferences.getString("selected_device_address", null);
                 if (deviceAddress != null) {
                     bluetooth.connect(deviceAddress);
                     if (bluetooth.isConnected()) {
+                        BTCN = true;
                         connectButton.setText("Disconnect");
                     }
                 } else {
@@ -130,13 +140,15 @@ public class AppSettings extends AppCompatActivity {
             }
         }
 
-    public void goBack(View view) {
-        if (view.getId() == R.id.btnBack) {
-            Intent intentMain = new Intent(AppSettings.this, MainActivity.class);
-            startActivity(intentMain);
+        public void goBack(View view) {
+            if (view.getId() == R.id.btnBack) {
+                Intent intent = new Intent(AppSettings.this, MainActivity.class);
+                going=true;
+                intent.putExtra("BTCN", BTCN);
+                startActivity(intent);
+            }
+            finish();
         }
-        finish();
-    }
 
     private void showDeviceChooserDialog() {
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
@@ -182,6 +194,16 @@ public class AppSettings extends AppCompatActivity {
         String deviceAddress = preferences.getString("selected_device_address", "");
         chosenDeviceTextView.setText("Chosen Device: " + deviceName + " (" + deviceAddress + ")");
     }
+        @Override
+        protected void onDestroy() {
+            super.onDestroy();
+            bluetooth.disconnect(going);
+        }
+        @Override
+        protected void onPause() {
+            super.onPause();
+            bluetooth.disconnect(going);
+        }
 
 
 }

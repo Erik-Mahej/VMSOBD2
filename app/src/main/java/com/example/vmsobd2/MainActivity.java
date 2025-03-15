@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
     private static boolean BTCN = false;
+    private static boolean going = false;
     private Bluetooth bluetooth;
     private TextView connectionStatus;
     private Button connectButton;
@@ -36,6 +37,13 @@ public class MainActivity extends AppCompatActivity {
 
         connectButton.setOnClickListener(v -> handleConnectButton());
 
+        Intent intent = getIntent();
+        boolean BTCN = intent.getBooleanExtra("BTCN", false);
+
+        if (BTCN) {
+            handleConnectButton();
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -45,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleConnectButton() {
         if (bluetooth.isConnected()) {
-            bluetooth.disconnect();
+            bluetooth.disconnect(going);
             connectButton.setText("Connect");
             connectionStatus.setText("OBD2 Status: Disconnected");
             BTCN = false;
@@ -55,8 +63,8 @@ public class MainActivity extends AppCompatActivity {
             if (deviceAddress != null) {
                 bluetooth.connect(deviceAddress);
                 if (bluetooth.isConnected()) {
-                    connectButton.setText("Disconnect");
                     BTCN = true;
+                    connectButton.setText("Disconnect");
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: No Device Selected");
@@ -89,19 +97,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void Transport(View view) {
-        if (view.getId() == R.id.btnDashboard) {
-            Intent intentDashboard = new Intent(MainActivity.this, carDashboard.class);
-            intentDashboard.putExtra("EXTRA_SESSION_ID", BTCN);
-            startActivity(intentDashboard);
-        } else if (view.getId() == R.id.btnStats) {
-            Intent intentDashboard = new Intent(MainActivity.this, CarStatistics.class);
-            startActivity(intentDashboard);
-        } else if (view.getId() == R.id.btnEngineFaults) {
-            Intent intentDashboard = new Intent(MainActivity.this, EngineFaults.class);
-            startActivity(intentDashboard);
-        } else if (view.getId() == R.id.btnSettings) {
-            Intent intentDashboard = new Intent(MainActivity.this, AppSettings.class);
-            startActivity(intentDashboard);
+        Intent intent = null;
+        going = true; // Set this flag once since it's common for all cases
+
+        int viewId = view.getId(); // Store the view ID in a variable
+
+        if (viewId == R.id.btnDashboard) {
+            intent = new Intent(MainActivity.this, carDashboard.class);
+        } else if (viewId == R.id.btnStats) {
+            intent = new Intent(MainActivity.this, CarStatistics.class);
+        } else if (viewId == R.id.btnEngineFaults) {
+            intent = new Intent(MainActivity.this, EngineFaults.class);
+        } else if (viewId == R.id.btnSettings) {
+            intent = new Intent(MainActivity.this, AppSettings.class);
+        } else {
+            // Handle the case where the view ID does not match any known button
+            return; // Exit the method if no valid button was pressed
         }
+
+        // Put the extra and start the activity if intent is not null
+        if (intent != null) {
+            intent.putExtra("BTCN", BTCN);
+            startActivity(intent);
+        }
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        bluetooth.disconnect(going);
     }
 }

@@ -30,6 +30,9 @@ public class carDashboard extends AppCompatActivity {
     private DeluxeSpeedView speedView1;
     private Handler handler;
     private Runnable rpmRequestRunnable;
+    private static boolean going = false;
+    private static boolean BTCN = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +49,12 @@ public class carDashboard extends AppCompatActivity {
 
         speedView1 = findViewById(R.id.speedView);
 
+        Intent intent = getIntent();
+        boolean BTCN = intent.getBooleanExtra("BTCN", false);
 
+        if (BTCN) {
+            handleConnectButton();
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -61,6 +69,8 @@ public class carDashboard extends AppCompatActivity {
             public void run() {
                 if (bluetooth.isConnected()) {
                     requestEngineRPM();
+                }else{
+                    speedView1.speedTo(0);
                 }
                 //jak casto se posila dotaz
                 handler.postDelayed(this, 100);
@@ -119,15 +129,17 @@ public class carDashboard extends AppCompatActivity {
 
     private void handleConnectButton() {
         if (bluetooth.isConnected()) {
-            bluetooth.disconnect();
+            bluetooth.disconnect(going);
             connectButton.setText("Connect");
             connectionStatus.setText("OBD2 Status: Disconnected");
+            BTCN = false;
         } else {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             String deviceAddress = preferences.getString("selected_device_address", null);
             if (deviceAddress != null) {
                 bluetooth.connect(deviceAddress);
                 if (bluetooth.isConnected()) {
+                    BTCN = true;
                     connectButton.setText("Disconnect");
                 }
             } else {
@@ -139,8 +151,10 @@ public class carDashboard extends AppCompatActivity {
 
     public void goBack(View view) {
         if (view.getId() == R.id.btnBack) {
-            Intent intentMain = new Intent(carDashboard.this, MainActivity.class);
-            startActivity(intentMain);
+            Intent intent = new Intent(carDashboard.this, MainActivity.class);
+            going=true;
+            intent.putExtra("BTCN", BTCN);
+            startActivity(intent);
         }
         finish();
     }
@@ -172,6 +186,11 @@ public class carDashboard extends AppCompatActivity {
         super.onDestroy();
         // Stop the handler when the activity is destroyed
         handler.removeCallbacks(rpmRequestRunnable);
-        bluetooth.disconnect();
+        bluetooth.disconnect(going);
+    }
+    @Override
+    protected void onPause() {
+        super.onPause();
+        bluetooth.disconnect(going);
     }
 }

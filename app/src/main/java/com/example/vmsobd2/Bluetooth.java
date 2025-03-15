@@ -62,13 +62,15 @@ public class Bluetooth {
         }
     }
 
-    public void disconnect() {
+    public void disconnect(boolean going) {
         try {
             if (bluetoothSocket != null) {
                 bluetoothSocket.close();
             }
             isConnected = false;
+            if(!going){
             connectionStatus.setText("OBD2 Status: Disconnected");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
