@@ -69,6 +69,8 @@ public class carDashboard extends AppCompatActivity {
             public void run() {
                 if (bluetooth.isConnected()) {
                     requestEngineRPM();
+                    requestCarSpeed();
+                    requestEngineConsumption();
                 }else{
                     speedView1.speedTo(0);
                 }
@@ -87,34 +89,53 @@ public class carDashboard extends AppCompatActivity {
         String command = "010C"; //tady se definuje PID
         bluetooth.sendCommand(command);
         String response = bluetooth.readResponse();
-        handleResponse(response);
+        int decodedResponse = decodeResponse(response);
+        updateRPMDisplay(decodedResponse);
     }
-
+    private void requestCarSpeed() {
+        //tady se posila command na rychlost
+        String command = "010D"; //tady se definuje PID
+        bluetooth.sendCommand(command);
+        String response = bluetooth.readResponse();
+        int decodedResponse = decodeResponse(response);
+        updateSpeedDisplay(decodedResponse);
+    }
+    private void requestEngineConsumption() {
+        //tady se posila command na spotrebu
+        String command = "012F"; //tady se definuje PID
+        bluetooth.sendCommand(command);
+        String response = bluetooth.readResponse();
+        int decodedResponse = decodeResponse(response);
+        updateConstumptionDisplay(decodedResponse);
+    }
+    /*
     private void handleResponse(String response) {
         Log.d("carDashboard", "Received response: " + response);
         try {
-            int rpm = decodeRPM(response);
-            updateRPMDisplay(rpm);
+            int decodedResponse = decodeResponse(response);
+            updateRPMDisplay(decodedResponse);
         } catch (Exception e) {
             Log.e("carDashboard", "Error processing response: " + e.getMessage());
         }
     }
+     */
 
     private void updateRPMDisplay(int rpm) {
         speedView1.speedTo(rpm,300);
     }
-
-    public static int decodeRPM(String response) {
+    private void updateSpeedDisplay(int rpm) {
+        speedView1.speedTo(rpm,300);
+    }
+    private void updateConstumptionDisplay(int rpm) {
+        speedView1.speedTo(rpm,300);
+    }
+    public static int decodeResponse(String response) {
         String[] parts = response.split(" ");
 
 
         if (parts.length < 5) {
             Log.e("carDashboard", "Invalid response format. Expected at least 5 parts. Response: " + response);
             throw new IllegalArgumentException("Invalid response format. Expected at least 5 parts.");
-        }
-        if (!parts[1].equals("41") || !parts[2].equals("0C")) {
-            Log.e("carDashboard", "Response is not for RPM request. Response: " + response);
-            throw new IllegalArgumentException("Response is not for RPM request.");
         }
 
         // Extract the RPM data (the next two bytes)
