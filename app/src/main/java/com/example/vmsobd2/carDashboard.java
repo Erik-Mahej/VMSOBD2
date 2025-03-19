@@ -28,6 +28,8 @@ public class carDashboard extends AppCompatActivity {
     private TextView connectionStatus;
     private Button connectButton;
     private DeluxeSpeedView speedView1;
+    private DeluxeSpeedView speedView2;
+    private DeluxeSpeedView speedView3;
     private Handler handler;
     private Runnable rpmRequestRunnable;
     private static boolean going = false;
@@ -48,6 +50,8 @@ public class carDashboard extends AppCompatActivity {
         connectButton.setOnClickListener(v -> handleConnectButton());
 
         speedView1 = findViewById(R.id.speedView);
+        speedView2 = findViewById(R.id.speedView2);
+        speedView3 = findViewById(R.id.speedView3);
 
         Intent intent = getIntent();
         boolean BTCN = intent.getBooleanExtra("BTCN", false);
@@ -120,14 +124,14 @@ public class carDashboard extends AppCompatActivity {
     }
      */
 
-    private void updateRPMDisplay(int rpm) {
-        speedView1.speedTo(rpm,300);
+    private void updateRPMDisplay(int unit) {
+        speedView1.speedTo(unit,300);
     }
-    private void updateSpeedDisplay(int rpm) {
-        speedView1.speedTo(rpm,300);
+    private void updateSpeedDisplay(int unit) {
+        speedView2.speedTo(unit,300);
     }
-    private void updateConstumptionDisplay(int rpm) {
-        speedView1.speedTo(rpm,300);
+    private void updateConstumptionDisplay(int unit) {
+        speedView3.speedTo(unit,300);
     }
     public static int decodeResponse(String response) {
         String[] parts = response.split(" ");
