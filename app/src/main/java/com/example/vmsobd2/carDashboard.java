@@ -315,10 +315,27 @@ public class carDashboard extends AppCompatActivity {
         }
     }
     public int parseSpeed(String response) {
-        if (response != null && response.startsWith("410D") && response.length() >= 6) {
-            return Integer.parseInt(response.substring(4, 6), 16);
+        if (response == null) return -1;
+
+        response = response.replaceAll(" ", "").toUpperCase();
+
+        int index = response.indexOf("410D");
+        if (index != -1 && index + 8 <= response.length()) {
+            try {
+                String A_str = response.substring(index + 4, index + 6);
+                String B_str = response.substring(index + 6, index + 8);
+                String both = A_str+B_str;
+                int Value = Integer.parseInt(both, 16);
+
+                return Value ;
+            } catch (Exception e) {
+                Log.e("Bluetooth", "Speed parse failed: " + e.getMessage());
+                return -1;
+            }
+        } else {
+            Log.w("Bluetooth", "410D not found in response.");
+            return -1;
         }
-        return -1;
     }
 
     public int parseConsumption(String response) {
