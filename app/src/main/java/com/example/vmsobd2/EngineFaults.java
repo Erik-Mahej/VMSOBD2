@@ -28,10 +28,11 @@ public class EngineFaults extends AppCompatActivity {
 
     private Bluetooth bluetooth;
     private TextView connectionStatus;
+    private TextView statusText;
     private Button connectButton;
     private GridLayout gridLayout;
     private int cardCount = 0;
-    private String faults[]  = {"nevim"};
+    private String[] faults = {"01 03", "01 04", "01 05"}; //fault kody
     private static boolean going = false;
     private static boolean BTCN = false;
 
@@ -44,9 +45,9 @@ public class EngineFaults extends AppCompatActivity {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
-
         });
         connectionStatus = findViewById(R.id.connection_status);
+        statusText = findViewById(R.id.status);
         connectButton = findViewById(R.id.btnConnect);
 
         connectButton.setOnClickListener(v -> handleConnectButton());
@@ -55,11 +56,23 @@ public class EngineFaults extends AppCompatActivity {
 
         gridLayout = findViewById(R.id.gridLayout);
 
+
+        updateStatus("Connect to Bluetooth to scan");
+        checkBluetoothConnection();
+
         Intent intent = getIntent();
         boolean BTCN = intent.getBooleanExtra("BTCN", false);
 
         if (BTCN) {
             handleConnectButton();
+        }
+    }
+
+    private void checkBluetoothConnection() {
+        if (bluetooth != null && bluetooth.isConnected()) {
+            updateStatus("Ready to scan");
+        } else {
+            updateStatus("Connect to Bluetooth to scan");
         }
     }
 
@@ -70,50 +83,59 @@ public class EngineFaults extends AppCompatActivity {
         }
         finish();
     }
-    public void onClick(View v) {
-        addCardView("Card " + (++cardCount));
-    }
 
-    public void run() {
-        if (bluetooth.isConnected()) {
-            for (String e : faults){
-                requestEngineFaults(e);
+    public void run(View view) {
+        try {
+            if (bluetooth != null && bluetooth.isConnected()) {
+                updateStatus("Ready to scan");
+                updateStatus("Scanning...");
+                for (String fault : faults) {
+                    requestEngineFaults(fault);
+                }
+                updateStatus("Scanning completed");
+            } else {
+                updateStatus("Connect to Bluetooth to scan");
+                Toast.makeText(this, "Bluetooth is not connected. Please connect your OBD2 device.", Toast.LENGTH_SHORT).show();
             }
-        }else{
-            //bt neni connected
+        } catch (Exception e) {
+            Toast.makeText(this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
+            updateStatus("Scanning failed");
         }
+    }
+    private void updateStatus(String status) {
+        statusText.setText(status);
     }
 
     private void requestEngineFaults(String fault) {
-        //tady se posila command na rpm
-        String command = fault; //tady se definuje PID
-       // bluetooth.sendCommand(command);
-        //String response = bluetooth.readResponse();
-        //int decodedResponse = decodeResponse(response);
-        //String finalFault = assignFault(decodedResponse);
-        //addCardView(finalFault);
+        String response = bluetooth.sendObdCommand(fault);
+        if (response != null) {
+            int decodedResponse = decodeResponse(response);
+            String faultDescription = assignFault(decodedResponse);
+            addCardView(faultDescription);
+        } else {
+            Log.e("EngineFaults", "No response received for command: " + fault);
+        }
     }
-    public String assignFault(int respoceCode){
 
-        return null;
+    public String assignFault(int responseCode) {
+        switch (responseCode) {
+            case 0x01:
+                return "Fault Code: P0001 - Fuel Volume Regulator Control Circuit/Open";
+            case 0x02:
+                return "Fault Code: P0002 - Fuel Volume Regulator Control Circuit Range/Performance";
+            default:
+                return "Unknown Fault Code: " + Integer.toHexString(responseCode).toUpperCase();
+        }
     }
     public static int decodeResponse(String response) {
         String[] parts = response.split(" ");
 
-
         if (parts.length < 5) {
-            Log.e("carDashboard", "Invalid response format. Expected at least 5 parts. Response: " + response);
+            Log.e("EngineFaults", "Invalid response format. Expected at least 5 parts. Response: " + response);
             throw new IllegalArgumentException("Invalid response format. Expected at least 5 parts.");
         }
-
-        // Extract the RPM data (the next two bytes)
-        String rpmHex1 = parts[3]; // First byte
-        String rpmHex2 = parts[4]; // Second byte
-
-        // Combine the two bytes into a single hex string
-        String combinedHex = (rpmHex1 + rpmHex2).trim();
-
-        return Integer.parseInt(combinedHex, 16);
+        String faultCodeHex = parts[2];
+        return Integer.parseInt(faultCodeHex, 16);
     }
     private void handleConnectButton() {
         if (bluetooth.isConnected()) {
@@ -121,6 +143,7 @@ public class EngineFaults extends AppCompatActivity {
             connectButton.setText("Connect");
             connectionStatus.setText("OBD2 Status: Disconnected");
             BTCN = false;
+            updateStatus("Connect to Bluetooth to scan");
         } else {
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
             String deviceAddress = preferences.getString("selected_device_address", null);
@@ -129,10 +152,13 @@ public class EngineFaults extends AppCompatActivity {
                 if (bluetooth.isConnected()) {
                     BTCN = true;
                     connectButton.setText("Disconnect");
+                    connectionStatus.setText("OBD2 Status: Connected");
+                    updateStatus("Ready to scan"); // Update status when connected
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: No Device Selected");
                 Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                updateStatus("Connect to Bluetooth to scan");
             }
         }
     }
@@ -158,12 +184,12 @@ public class EngineFaults extends AppCompatActivity {
 
         TextView textView = new TextView(this);
         textView.setText(text);
-        textView.setTextColor(Color.parseColor("#0D0D0D")); //barva textu
-        textView.setTextSize(18); //velikost textu
+        textView.setTextColor(Color.parseColor("#0D0D0D"));
+        textView.setTextSize(18);
         textView.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
-        textView.setPadding(0, 10, 0, 10); //margin nahore
+        textView.setPadding(0, 10, 0, 10);
 
         innerLayout.addView(textView);
 
@@ -189,7 +215,7 @@ public class EngineFaults extends AppCompatActivity {
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: Permission Denied");
-                Toast.makeText(this, "Bluetooth permission denied. Allow it in the aplication settings.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Bluetooth permission denied. Allow it in the application settings.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -204,5 +230,4 @@ public class EngineFaults extends AppCompatActivity {
         super.onPause();
         bluetooth.disconnect(true);
     }
-
 }
