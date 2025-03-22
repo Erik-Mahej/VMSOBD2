@@ -9,32 +9,32 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
 import androidx.activity.EdgeToEdge;
+
 import com.github.anastr.speedviewlib.DeluxeSpeedView;
+
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.Arrays;
 
 public class carDashboard extends AppCompatActivity {
     private Bluetooth bluetooth;
-    private TextView connectionStatus;
+    private TextView connectionStatus, moretext;
     private Button connectButton;
-    private DeluxeSpeedView speedView1;
-    private DeluxeSpeedView speedView2;
-    private DeluxeSpeedView speedView3;
+    private DeluxeSpeedView speedView1, speedView2, speedView3;
     private Handler handler;
-    private Runnable rpmRequestRunnable;
-    private static boolean going = false;
+    private Switch switch1;
+    private Runnable obdPollingRunnable;
+    private boolean switchik = false;
     private static boolean BTCN = false;
-
+    private static boolean going = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,21 +44,26 @@ public class carDashboard extends AppCompatActivity {
 
         connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
+        moretext = findViewById(R.id.moretext);
+
+        speedView1 = findViewById(R.id.speedView);   // RPM
+        speedView2 = findViewById(R.id.speedView2);  // Speed
+        speedView3 = findViewById(R.id.speedView3);  // Fuel level
+
+        switch1 = findViewById(R.id.moreswitch);
+        switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            switchik = isChecked;
+            String message = isChecked ? "Live Data ON" : "Live Data OFF";
+            Toast.makeText(carDashboard.this, message, Toast.LENGTH_SHORT).show();
+        });
 
         bluetooth = new Bluetooth(this, connectionStatus);
 
         connectButton.setOnClickListener(v -> handleConnectButton());
 
-        speedView1 = findViewById(R.id.speedView);
-        speedView2 = findViewById(R.id.speedView2);
-        speedView3 = findViewById(R.id.speedView3);
-
         Intent intent = getIntent();
-        boolean BTCN = intent.getBooleanExtra("BTCN", false);
-
-        if (BTCN) {
-            handleConnectButton();
-        }
+        BTCN = intent.getBooleanExtra("BTCN", false);
+        if (BTCN) handleConnectButton();
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -66,90 +71,81 @@ public class carDashboard extends AppCompatActivity {
             return insets;
         });
 
-
         handler = new Handler();
-        rpmRequestRunnable = new Runnable() {
+        obdPollingRunnable = new Runnable() {
             @Override
             public void run() {
-                if (bluetooth.isConnected()) {
+                if (bluetooth.isConnected() && switchik) {
                     requestEngineRPM();
                     requestCarSpeed();
-                    requestEngineConsumption();
-                }else{
-                    speedView1.speedTo(0);
+                    requestFuelLevel();
                 }
-                //jak casto se posila dotaz
-                handler.postDelayed(this, 100);
+                handler.postDelayed(this, 3000);
             }
         };
 
-        //tady se zapne posilani dotazu
-        handler.post(rpmRequestRunnable);
+        handler.post(obdPollingRunnable);
     }
-
 
     private void requestEngineRPM() {
-        //tady se posila command na rpm
-        String command = "010C"; //tady se definuje PID
-        bluetooth.sendCommand(command);
-        String response = bluetooth.readResponse();
-        int decodedResponse = decodeResponse(response);
-        updateRPMDisplay(decodedResponse);
+        String response = bluetooth.sendObdCommand("010C"); // RPM PID
+        if (response != null) {
+            int rpm = parseRpm(response);
+            speedView1.speedTo(rpm, 300);
+            moretext.setText("RPM Response: " + response);
+        } else {
+            moretext.setText("RPM: No response");
+        }
     }
+
     private void requestCarSpeed() {
-        //tady se posila command na rychlost
-        String command = "010D"; //tady se definuje PID
-        bluetooth.sendCommand(command);
-        String response = bluetooth.readResponse();
-        int decodedResponse = decodeResponse(response);
-        updateSpeedDisplay(decodedResponse);
-    }
-    private void requestEngineConsumption() {
-        //tady se posila command na spotrebu
-        String command = "012F"; //tady se definuje PID
-        bluetooth.sendCommand(command);
-        String response = bluetooth.readResponse();
-        int decodedResponse = decodeResponse(response);
-        updateConstumptionDisplay(decodedResponse);
-    }
-    /*
-    private void handleResponse(String response) {
-        Log.d("carDashboard", "Received response: " + response);
-        try {
-            int decodedResponse = decodeResponse(response);
-            updateRPMDisplay(decodedResponse);
-        } catch (Exception e) {
-            Log.e("carDashboard", "Error processing response: " + e.getMessage());
+        String response = bluetooth.sendObdCommand("010D"); // Speed PID
+        if (response != null) {
+            int speed = parseSpeed(response);
+            speedView2.speedTo(speed, 300);
         }
     }
-     */
 
-    private void updateRPMDisplay(int unit) {
-        speedView1.speedTo(unit,300);
-    }
-    private void updateSpeedDisplay(int unit) {
-        speedView2.speedTo(unit,300);
-    }
-    private void updateConstumptionDisplay(int unit) {
-        speedView3.speedTo(unit,300);
-    }
-    public static int decodeResponse(String response) {
-        String[] parts = response.split(" ");
-
-
-        if (parts.length < 5) {
-            Log.e("carDashboard", "Invalid response format. Expected at least 5 parts. Response: " + response);
-            throw new IllegalArgumentException("Invalid response format. Expected at least 5 parts.");
+    private void requestFuelLevel() {
+        String response = bluetooth.sendObdCommand("012F"); // Fuel Level PID
+        if (response != null && response.startsWith("412F") && response.length() >= 6) {
+            try {
+                int fuelPercent = Integer.parseInt(response.substring(4, 6), 16) * 100 / 255;
+                speedView3.speedTo(fuelPercent, 300);
+            } catch (Exception e) {
+                Log.e("OBD", "Fuel parse error: " + e.getMessage());
+            }
         }
+    }
+    public int parseRpm(String response) {
+        if (response == null) return -1;
 
-        // Extract the RPM data (the next two bytes)
-        String rpmHex1 = parts[3]; // First byte
-        String rpmHex2 = parts[4]; // Second byte
+        response = response.replaceAll(" ", "").toUpperCase();
 
-        // Combine the two bytes into a single hex string
-        String combinedHex = (rpmHex1 + rpmHex2).trim();
+        // Look for 410C in the response
+        int index = response.indexOf("410C");
+        if (index != -1 && index + 8 <= response.length()) {
+            try {
+                String A_str = response.substring(index + 4, index + 6);
+                String B_str = response.substring(index + 6, index + 8);
+                String both = A_str+B_str;
+                int Value = Integer.parseInt(both, 16);
 
-        return Integer.parseInt(combinedHex, 16);
+                return Value / 4;
+            } catch (Exception e) {
+                Log.e("Bluetooth", "RPM parse failed: " + e.getMessage());
+                return -1;
+            }
+        } else {
+            Log.w("Bluetooth", "410C not found in response.");
+            return -1;
+        }
+    }
+    public int parseSpeed(String response) {
+        if (response != null && response.startsWith("410D") && response.length() >= 6) {
+            return Integer.parseInt(response.substring(4, 6), 16);
+        }
+        return -1;
     }
 
     private void handleConnectButton() {
@@ -169,7 +165,7 @@ public class carDashboard extends AppCompatActivity {
                 }
             } else {
                 connectionStatus.setText("OBD2 Status: No Device Selected");
-                Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "Please select a device in settings.", Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -208,8 +204,7 @@ public class carDashboard extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Stop the handler when the activity is destroyed
-        handler.removeCallbacks(rpmRequestRunnable);
+        handler.removeCallbacks(obdPollingRunnable);
         bluetooth.disconnect(true);
     }
     @Override

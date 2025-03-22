@@ -98,6 +98,18 @@
                         app:sv_trembleDuration="300"
                         app:sv_unit="RPM"
                         app:sv_unitUnderSpeedText="true" />
+                    <TextView
+                        android:id="@+id/moretext"
+                        android:layout_width="match_parent"
+                        android:layout_height="200dp"
+                        android:text="more"
+                        android:gravity="center"
+                        android:textColor="@color/black"/>
+                    <Switch
+                        android:id="@+id/moreswitch"
+                        android:layout_width="40dp"
+                        android:layout_height="30dp"
+                        />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

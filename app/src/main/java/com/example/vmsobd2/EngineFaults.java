@@ -87,11 +87,11 @@ public class EngineFaults extends AppCompatActivity {
     private void requestEngineFaults(String fault) {
         //tady se posila command na rpm
         String command = fault; //tady se definuje PID
-        bluetooth.sendCommand(command);
-        String response = bluetooth.readResponse();
-        int decodedResponse = decodeResponse(response);
-        String finalFault = assignFault(decodedResponse);
-        addCardView(finalFault);
+       // bluetooth.sendCommand(command);
+        //String response = bluetooth.readResponse();
+        //int decodedResponse = decodeResponse(response);
+        //String finalFault = assignFault(decodedResponse);
+        //addCardView(finalFault);
     }
     public String assignFault(int respoceCode){
 

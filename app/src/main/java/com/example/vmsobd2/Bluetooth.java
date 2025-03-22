@@ -4,18 +4,19 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.util.Log;
 import android.widget.TextView;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-
 //zaklad teto tridy jsem si nechal vygenerovat s prompty
 //i want to my android app layout add something that looks like a toolbar to the bottom where it would show obd2 connection status and a button for the connection
 // can i use another java file to handle the logic for connecting to the ob2 module?
@@ -23,6 +24,7 @@ import java.util.UUID;
 //jeste mi to dalo kod v activity_main.xml oznaceny 1.1 a 1.2
 //dal jsem dal prompt: can we handle all the communication logic with the obd2 scanner in this file because i have 5 different activities that i use
 //a doplnilo mi to logiku ale se spousty chyb
+
 public class Bluetooth {
     public static final int REQUEST_BLUETOOTH_CONNECT = 1;
     private Context context;
@@ -56,6 +58,7 @@ public class Bluetooth {
             outputStream = bluetoothSocket.getOutputStream();
             isConnected = true;
             connectionStatus.setText("OBD2 Status: Connected");
+            initELM327();
         } catch (IOException e) {
             connectionStatus.setText("OBD2 Status: Connection Failed");
             e.printStackTrace();
@@ -68,8 +71,8 @@ public class Bluetooth {
                 bluetoothSocket.close();
             }
             isConnected = false;
-            if(!going){
-            connectionStatus.setText("OBD2 Status: Disconnected");
+            if (!going) {
+                connectionStatus.setText("OBD2 Status: Disconnected");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -80,30 +83,58 @@ public class Bluetooth {
         return isConnected;
     }
 
-    public void sendCommand(String command) {
+    public void sendCommand(String command) throws IOException {
         if (isConnected && outputStream != null) {
-            try {
-                outputStream.write(command.getBytes(StandardCharsets.UTF_8)); // Specify encoding
-                outputStream.flush();
-            } catch (IOException e) {
-                e.printStackTrace(); // Consider logging instead
-            }
+            clearInputBuffer();
+            command = command.trim() + "\r";
+            outputStream.write(command.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
         }
     }
 
-    public String readResponse() {
+    public String readResponse() throws IOException {
         if (isConnected && inputStream != null) {
-            try {
-                byte[] buffer = new byte[1024];
-                int bytesRead = inputStream.read(buffer);
-                if (bytesRead == -1) {
-                    return null; // End of stream
-                }
-                return new String(buffer, 0, bytesRead, StandardCharsets.UTF_8); // Specify encoding
-            } catch (IOException e) {
-                e.printStackTrace(); // Consider logging instead
+            StringBuilder response = new StringBuilder();
+            int c;
+            while ((c = inputStream.read()) != -1) {
+                if ((char) c == '>') break;
+                response.append((char) c);
             }
+
+            return cleanResponse(response.toString());
         }
         return null;
     }
+    public String sendObdCommand(String command) {
+        try {
+            sendCommand(command);
+            Thread.sleep(100); //delay
+            return readResponse();
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    private void clearInputBuffer() throws IOException {
+        while (inputStream.available() > 0) {
+            inputStream.read();
+        }
+    }
+
+
+    private String cleanResponse(String raw) {
+        return raw.replaceAll("[\r\n ]", "");
+    }
+
+    private void initELM327() {
+        sendObdCommand("ATZ");    // Reset
+        sendObdCommand("ATE0");   // Echo Off
+        sendObdCommand("ATL0");   // Linefeeds Off
+        sendObdCommand("ATS0");   // Spaces Off
+        sendObdCommand("ATH1");   // Headers On (optional)
+    }
+
+
 }
