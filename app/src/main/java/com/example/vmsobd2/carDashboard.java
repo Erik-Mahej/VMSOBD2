@@ -1,5 +1,6 @@
 package com.example.vmsobd2;
 
+import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -25,11 +26,13 @@ import androidx.core.view.WindowInsetsCompat;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class carDashboard extends AppCompatActivity {
     private Bluetooth bluetooth;
-    private TextView connectionStatus,label1, label2, label3;
+    private TextView connectionStatus,label1, label2, label3,moretext;
 
     private Button connectButton;
     private DeluxeSpeedView speedView1, speedView2, speedView3;
@@ -39,6 +42,8 @@ public class carDashboard extends AppCompatActivity {
     private boolean switchik = false;
     private static boolean BTCN = false;
     private static boolean going = false;
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
 
     private GaugeMetric gauge1Metric = GaugeMetric.RPM;
     private GaugeMetric gauge2Metric = GaugeMetric.SPEED;
@@ -60,7 +65,7 @@ public class carDashboard extends AppCompatActivity {
         label1 = findViewById(R.id.textView1);
         label2 = findViewById(R.id.textView2);
         label3 = findViewById(R.id.textView3);
-
+        moretext=findViewById(R.id.moretext);
 
         switch1 = findViewById(R.id.moreswitch);
         switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -103,11 +108,12 @@ public class carDashboard extends AppCompatActivity {
             @Override
             public void run() {
                 if (bluetooth.isConnected() && switchik) {
-                    updateGauge(speedView1, gauge1Metric);
-                    updateGauge(speedView2, gauge2Metric);
-                    updateGauge(speedView3, gauge3Metric);
+                    updateGaugeAsync(speedView1, gauge1Metric);
+                    updateGaugeAsync(speedView2, gauge2Metric);
+                    updateGaugeAsync(speedView3, gauge3Metric);
+
                 }
-                handler.postDelayed(this, 1000);
+                handler.postDelayed(this, 50);
             }
         };
 
@@ -152,6 +158,29 @@ public class carDashboard extends AppCompatActivity {
         setGaugeUnit(speedView2, gauge2Metric);
         setGaugeUnit(speedView3, gauge3Metric);
     }
+    private void updateGaugeAsync(DeluxeSpeedView view, GaugeMetric metric) {
+        executor.execute(() -> {
+            int value = getMetricValue(metric);
+            if (value >= 0) {
+                runOnUiThread(() -> {
+                    animateGauge(view, value);
+                });
+            }
+        });
+    }
+
+    private void animateGauge(DeluxeSpeedView view, int targetValue) {
+        float currentValue = view.getSpeed();
+        ValueAnimator animator = ValueAnimator.ofInt((int) currentValue, targetValue);
+        animator.setDuration(500);
+        animator.addUpdateListener(animation -> {
+            int animatedValue = (int) animation.getAnimatedValue();
+            view.speedTo(animatedValue, 0);
+        });
+        animator.start();
+    }
+
+
 
     private void setGaugeUnit(DeluxeSpeedView view, GaugeMetric metric) {
         switch (metric) {
@@ -178,13 +207,14 @@ public class carDashboard extends AppCompatActivity {
                 break;
         }
     }
-    private void updateGauge(DeluxeSpeedView view, GaugeMetric metric) {
+    private int getMetricValue(GaugeMetric metric) {
         String response;
         int value = -1;
 
         switch (metric) {
             case RPM:
                 response = bluetooth.sendObdCommand("010C");
+                moretext.setText("RPM Response: " + response);
                 value = parseRpm(response);
                 break;
             case SPEED:
@@ -210,11 +240,9 @@ public class carDashboard extends AppCompatActivity {
                 value = parseConsumption(response);
                 break;
         }
-
-        if (value >= 0) {
-            view.speedTo(value, 300);
-        }
+        return value;
     }
+
     private void updateGaugeLabelsText() {
         label1.setText(getMetricLabel(gauge1Metric));
         label2.setText(getMetricLabel(gauge2Metric));
@@ -237,7 +265,7 @@ public class carDashboard extends AppCompatActivity {
         String response = bluetooth.sendObdCommand("010C"); // RPM PID
         if (response != null) {
             int rpm = parseRpm(response);
-            speedView1.speedTo(rpm, 300);
+            speedView1.speedTo(rpm, 50);
             //moretext.setText("RPM Response: " + response);
         } else {
             //moretext.setText("RPM: No response");
@@ -268,7 +296,6 @@ public class carDashboard extends AppCompatActivity {
 
         response = response.replaceAll(" ", "").toUpperCase();
 
-        // Look for 410C in the response
         int index = response.indexOf("410C");
         if (index != -1 && index + 8 <= response.length()) {
             try {
@@ -305,7 +332,6 @@ public class carDashboard extends AppCompatActivity {
                 String A_str = response.substring(4, 6);
                 int A = Integer.parseInt(A_str, 16);
 
-                // We'll just return A as-is for now. Optionally scale it.
                 return A; // or (int)(A * 0.1) for decimal-like representation
                 //return (int)(A * 0.1); // display as 3.4 L/100km if A = 34
 
@@ -375,6 +401,7 @@ public class carDashboard extends AppCompatActivity {
         super.onDestroy();
         handler.removeCallbacks(obdPollingRunnable);
         bluetooth.disconnect(true);
+        executor.shutdownNow();
     }
     @Override
     protected void onPause() {
