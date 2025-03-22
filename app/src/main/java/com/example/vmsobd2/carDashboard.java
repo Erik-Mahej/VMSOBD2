@@ -22,11 +22,15 @@ import com.github.anastr.speedviewlib.DeluxeSpeedView;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+
 
 
 public class carDashboard extends AppCompatActivity {
     private Bluetooth bluetooth;
-    private TextView connectionStatus, moretext;
+    private TextView connectionStatus,label1, label2, label3;
+
     private Button connectButton;
     private DeluxeSpeedView speedView1, speedView2, speedView3;
     private Handler handler;
@@ -36,6 +40,11 @@ public class carDashboard extends AppCompatActivity {
     private static boolean BTCN = false;
     private static boolean going = false;
 
+    private GaugeMetric gauge1Metric = GaugeMetric.RPM;
+    private GaugeMetric gauge2Metric = GaugeMetric.SPEED;
+    private GaugeMetric gauge3Metric = GaugeMetric.FUEL_LEVEL;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,11 +53,14 @@ public class carDashboard extends AppCompatActivity {
 
         connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
-        moretext = findViewById(R.id.moretext);
 
-        speedView1 = findViewById(R.id.speedView);   // RPM
-        speedView2 = findViewById(R.id.speedView2);  // Speed
-        speedView3 = findViewById(R.id.speedView3);  // Fuel level
+        speedView1 = findViewById(R.id.speedView1);
+        speedView2 = findViewById(R.id.speedView2);
+        speedView3 = findViewById(R.id.speedView3);
+        label1 = findViewById(R.id.textView1);
+        label2 = findViewById(R.id.textView2);
+        label3 = findViewById(R.id.textView3);
+
 
         switch1 = findViewById(R.id.moreswitch);
         switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -60,6 +72,21 @@ public class carDashboard extends AppCompatActivity {
         bluetooth = new Bluetooth(this, connectionStatus);
 
         connectButton.setOnClickListener(v -> handleConnectButton());
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        gauge1Metric = GaugeMetric.valueOf(prefs.getString("gauge1Metric", GaugeMetric.RPM.name()));
+        gauge2Metric = GaugeMetric.valueOf(prefs.getString("gauge2Metric", GaugeMetric.SPEED.name()));
+        gauge3Metric = GaugeMetric.valueOf(prefs.getString("gauge3Metric", GaugeMetric.FUEL_LEVEL.name()));
+
+        updateGaugeLabelsAndUnits();
+        updateGaugeLabelsText();
+
+        speedView1.setOnClickListener(v -> showMetricSelectionDialog(1));
+        speedView2.setOnClickListener(v -> showMetricSelectionDialog(2));
+        speedView3.setOnClickListener(v -> showMetricSelectionDialog(3));
+
+
+
 
         Intent intent = getIntent();
         BTCN = intent.getBooleanExtra("BTCN", false);
@@ -76,25 +103,144 @@ public class carDashboard extends AppCompatActivity {
             @Override
             public void run() {
                 if (bluetooth.isConnected() && switchik) {
-                    requestEngineRPM();
-                    requestCarSpeed();
-                    requestFuelLevel();
+                    updateGauge(speedView1, gauge1Metric);
+                    updateGauge(speedView2, gauge2Metric);
+                    updateGauge(speedView3, gauge3Metric);
                 }
-                handler.postDelayed(this, 3000);
+                handler.postDelayed(this, 1000);
             }
         };
 
+
         handler.post(obdPollingRunnable);
     }
+
+    private void showMetricSelectionDialog(int gaugeNumber) {
+        final String[] metrics = {"Engine RPM", "Car Speed", "Fuel Level", "Avg Consumption", "Current Consumption"};
+        new AlertDialog.Builder(this)
+                .setTitle("Select Metric")
+                .setItems(metrics, (dialog, which) -> {
+                    GaugeMetric selectedMetric = GaugeMetric.values()[which];
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+                    SharedPreferences.Editor editor = prefs.edit();
+
+                    switch (gaugeNumber) {
+                        case 1:
+                            gauge1Metric = selectedMetric;
+                            editor.putString("gauge1Metric", selectedMetric.name());
+                            break;
+                        case 2:
+                            gauge2Metric = selectedMetric;
+                            editor.putString("gauge2Metric", selectedMetric.name());
+                            break;
+                        case 3:
+                            gauge3Metric = selectedMetric;
+                            editor.putString("gauge3Metric", selectedMetric.name());
+                            break;
+                    }
+
+                    editor.apply(); // Save it
+                    updateGaugeLabelsAndUnits();
+                    updateGaugeLabelsText();
+
+                })
+                .show();
+    }
+
+    private void updateGaugeLabelsAndUnits() {
+        setGaugeUnit(speedView1, gauge1Metric);
+        setGaugeUnit(speedView2, gauge2Metric);
+        setGaugeUnit(speedView3, gauge3Metric);
+    }
+
+    private void setGaugeUnit(DeluxeSpeedView view, GaugeMetric metric) {
+        switch (metric) {
+            case RPM:
+                view.setUnit("RPM");
+                view.setMaxSpeed(6000);
+                view.setWithTremble(false);
+                break;
+            case SPEED:
+                view.setUnit("km/h");
+                view.setMaxSpeed(240);
+                view.setWithTremble(false);
+                break;
+            case FUEL_LEVEL:
+                view.setUnit("%");
+                view.setMaxSpeed(100);
+                view.setWithTremble(false);
+                break;
+            case AVG_CONSUMPTION:
+            case CURRENT_CONSUMPTION:
+                view.setUnit("L/100km");
+                view.setMaxSpeed(20);
+                view.setWithTremble(false);
+                break;
+        }
+    }
+    private void updateGauge(DeluxeSpeedView view, GaugeMetric metric) {
+        String response;
+        int value = -1;
+
+        switch (metric) {
+            case RPM:
+                response = bluetooth.sendObdCommand("010C");
+                value = parseRpm(response);
+                break;
+            case SPEED:
+                response = bluetooth.sendObdCommand("010D");
+                value = parseSpeed(response);
+                break;
+            case FUEL_LEVEL:
+                response = bluetooth.sendObdCommand("012F");
+                if (response != null && response.startsWith("412F") && response.length() >= 6) {
+                    try {
+                        value = Integer.parseInt(response.substring(4, 6), 16) * 100 / 255;
+                    } catch (Exception e) {
+                        Log.e("OBD", "Fuel parse error: " + e.getMessage());
+                    }
+                }
+                break;
+            case AVG_CONSUMPTION:
+                response = bluetooth.sendObdCommand("015F");
+                value = parseConsumption(response);
+                break;
+            case CURRENT_CONSUMPTION:
+                response = bluetooth.sendObdCommand("015E");
+                value = parseConsumption(response);
+                break;
+        }
+
+        if (value >= 0) {
+            view.speedTo(value, 300);
+        }
+    }
+    private void updateGaugeLabelsText() {
+        label1.setText(getMetricLabel(gauge1Metric));
+        label2.setText(getMetricLabel(gauge2Metric));
+        label3.setText(getMetricLabel(gauge3Metric));
+    }
+
+    private String getMetricLabel(GaugeMetric metric) {
+        switch (metric) {
+            case RPM: return "Engine RPM";
+            case SPEED: return "Car Speed";
+            case FUEL_LEVEL: return "Fuel Level";
+            case AVG_CONSUMPTION: return "Avg Consumption";
+            case CURRENT_CONSUMPTION: return "Current Consumption";
+            default: return "Unknown";
+        }
+    }
+
 
     private void requestEngineRPM() {
         String response = bluetooth.sendObdCommand("010C"); // RPM PID
         if (response != null) {
             int rpm = parseRpm(response);
             speedView1.speedTo(rpm, 300);
-            moretext.setText("RPM Response: " + response);
+            //moretext.setText("RPM Response: " + response);
         } else {
-            moretext.setText("RPM: No response");
+            //moretext.setText("RPM: No response");
         }
     }
 
@@ -147,6 +293,29 @@ public class carDashboard extends AppCompatActivity {
         }
         return -1;
     }
+
+    public int parseConsumption(String response) {
+        if (response == null) return -1;
+
+        response = response.replaceAll(" ", "").toUpperCase();
+
+        // Example: response = "415E0A" or "415F14"
+        if ((response.startsWith("415E") || response.startsWith("415F")) && response.length() >= 6) {
+            try {
+                String A_str = response.substring(4, 6);
+                int A = Integer.parseInt(A_str, 16);
+
+                // We'll just return A as-is for now. Optionally scale it.
+                return A; // or (int)(A * 0.1) for decimal-like representation
+                //return (int)(A * 0.1); // display as 3.4 L/100km if A = 34
+
+            } catch (Exception e) {
+                Log.e("OBD", "Consumption parse error: " + e.getMessage());
+            }
+        }
+        return -1;
+    }
+
 
     private void handleConnectButton() {
         if (bluetooth.isConnected()) {
