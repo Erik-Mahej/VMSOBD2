@@ -32,7 +32,6 @@ public class EngineFaults extends AppCompatActivity {
     private Button connectButton;
     private GridLayout gridLayout;
     private int cardCount = 0;
-    private String[] faults = {"01 03", "01 04", "01 05"}; //fault kody
     private static boolean going = false;
     private static boolean BTCN = false;
 
@@ -85,27 +84,79 @@ public class EngineFaults extends AppCompatActivity {
     }
 
     public void run(View view) {
-        try {
-            if (bluetooth != null && bluetooth.isConnected()) {
-                updateStatus("Ready to scan");
-                updateStatus("Scanning...");
-                for (String fault : faults) {
-                    requestEngineFaults(fault);
+        new Thread(() -> {
+            try {
+                if (bluetooth != null && bluetooth.isConnected()) {
+                    runOnUiThread(() -> {
+                        int cardviewCount = gridLayout.getChildCount();
+                        if (cardviewCount > 1) {
+                            gridLayout.removeViews(1, cardviewCount - 1);
+                        }
+                        updateStatus("Scanning...");
+                    });
+
+                    Thread.sleep(1000);
+
+                    int count = requestNumberOfEngineFaults();
+
+                    runOnUiThread(() -> updateStatus("Found " + count + " faults"));
+
+                    int f = 301;
+
+                    Thread.sleep(1000);
+
+                    for (int i = 0; i < count; i++) {
+                        String reqFault = "0" + f;
+
+                        String response = bluetooth.sendObdCommand(reqFault);
+
+                        if (response != null && !response.isEmpty()) {
+                            int decodedResponse = decodeResponse(response);
+
+                            String faultDescription = assignFault(decodedResponse);
+
+                            runOnUiThread(() -> {
+                                addCardView(faultDescription);
+                            });
+                        } else {
+                            String faultDescription = "No response for code " + reqFault;
+                            runOnUiThread(() -> addCardView(faultDescription));
+                        }
+
+                        f++;
+                        Thread.sleep(2000);
+                    }
+                    runOnUiThread(() -> updateStatus("Scanning completed"));
+                } else {
+                    runOnUiThread(() -> {
+                        updateStatus("Connect to Bluetooth to scan");
+                        Toast.makeText(this, "Bluetooth is not connected. Please connect your OBD2 device.", Toast.LENGTH_SHORT).show();
+                    });
                 }
-                updateStatus("Scanning completed");
-            } else {
-                updateStatus("Connect to Bluetooth to scan");
-                Toast.makeText(this, "Bluetooth is not connected. Please connect your OBD2 device.", Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
+                    updateStatus("Scanning failed");
+                });
             }
-        } catch (Exception e) {
-            Toast.makeText(this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
-            updateStatus("Scanning failed");
-        }
+        }).start();
     }
+
+
+
     private void updateStatus(String status) {
         statusText.setText(status);
     }
 
+    private int requestNumberOfEngineFaults() {
+        String response = bluetooth.sendObdCommand("0300");
+        if (response != null) {
+            return  decodeResponseCount(response);
+        } else {
+            Log.e("EngineFaults", "No response received for command: " + "0300");
+        }
+        return 0;
+    }
     private void requestEngineFaults(String fault) {
         String response = bluetooth.sendObdCommand(fault);
         if (response != null) {
@@ -119,15 +170,37 @@ public class EngineFaults extends AppCompatActivity {
 
     public String assignFault(int responseCode) {
         switch (responseCode) {
-            case 0x01:
-                return "Fault Code: P0001 - Fuel Volume Regulator Control Circuit/Open";
-            case 0x02:
-                return "Fault Code: P0002 - Fuel Volume Regulator Control Circuit Range/Performance";
+            case 300:
+                return "Fault Code: P0300 - Random/multiple cylinder misfire detected";
+            case 420:
+                return "Fault Code: P0420 - Catalytic converter efficiency below threshold";
+            case 171:
+                return "Fault Code: P0171 - System too lean (Bank 1)";
             default:
                 return "Unknown Fault Code: " + Integer.toHexString(responseCode).toUpperCase();
         }
     }
+    public static int decodeResponseCount(String response) {
+        if (response == null) return -1;
+
+        response = response.replaceAll(" ", "").toUpperCase();
+
+        int index = response.indexOf("4100");
+        if (index != -1 && index + 6 <= response.length()) {
+            try {
+                String A_str = response.substring(index + 4, index + 6);
+                return Integer.parseInt(A_str);
+            } catch (Exception e) {
+                Log.e("Bluetooth", "Fault parse failed: " + e.getMessage());
+                return -1;
+            }
+        } else {
+            Log.w("Bluetooth", "4100 not found in response or not enough characters after 4100.");
+            return -1;
+        }
+    }
     public static int decodeResponse(String response) {
+        /*
         String[] parts = response.split(" ");
 
         if (parts.length < 5) {
@@ -136,6 +209,26 @@ public class EngineFaults extends AppCompatActivity {
         }
         String faultCodeHex = parts[2];
         return Integer.parseInt(faultCodeHex, 16);
+
+         */
+
+        if (response == null) return -1;
+
+        response = response.replaceAll(" ", "").toUpperCase();
+
+        int index = response.indexOf("P0");
+        if (index != -1 && index + 5 <= response.length()) {
+            try {
+                String A_str = response.substring(index + 2, index + 5);
+                 return Integer.parseInt(A_str);
+            } catch (Exception e) {
+                Log.e("Bluetooth", "Fault parse failed: " + e.getMessage());
+                return -1;
+            }
+        } else {
+            Log.w("Bluetooth", "P0 not found in response or not enough characters after P0.");
+            return -1;
+        }
     }
     private void handleConnectButton() {
         if (bluetooth.isConnected()) {

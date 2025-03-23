@@ -202,9 +202,10 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="42dp"
-        android:layout_marginEnd="16dp"
-        android:text="Work"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="6dp"
+        android:text="Live Data"
+        android:textColor="@color/white"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
