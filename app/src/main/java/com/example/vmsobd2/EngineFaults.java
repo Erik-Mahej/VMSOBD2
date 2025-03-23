@@ -31,9 +31,6 @@ public class EngineFaults extends AppCompatActivity {
     private TextView statusText;
     private Button connectButton;
     private GridLayout gridLayout;
-    private int cardCount = 0;
-    private static boolean going = false;
-    private static boolean BTCN = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +42,19 @@ public class EngineFaults extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        connectionStatus = findViewById(R.id.connection_status);
+
         statusText = findViewById(R.id.status);
+
+        //BLUETOOTH 1
+        connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
 
-        connectButton.setOnClickListener(v -> handleConnectButton());
-
         bluetooth = new Bluetooth(this, connectionStatus);
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String deviceAddress = preferences.getString("selected_device_address", "");
+        bluetooth.handleConnectButton(connectButton, deviceAddress);
+        //BLUETOOTH 2
 
         gridLayout = findViewById(R.id.gridLayout);
 
@@ -59,12 +62,7 @@ public class EngineFaults extends AppCompatActivity {
         updateStatus("Connect to Bluetooth to scan");
         checkBluetoothConnection();
 
-        Intent intent = getIntent();
-        boolean BTCN = intent.getBooleanExtra("BTCN", false);
 
-        if (BTCN) {
-            handleConnectButton();
-        }
     }
 
     private void checkBluetoothConnection() {
@@ -200,18 +198,6 @@ public class EngineFaults extends AppCompatActivity {
         }
     }
     public static int decodeResponse(String response) {
-        /*
-        String[] parts = response.split(" ");
-
-        if (parts.length < 5) {
-            Log.e("EngineFaults", "Invalid response format. Expected at least 5 parts. Response: " + response);
-            throw new IllegalArgumentException("Invalid response format. Expected at least 5 parts.");
-        }
-        String faultCodeHex = parts[2];
-        return Integer.parseInt(faultCodeHex, 16);
-
-         */
-
         if (response == null) return -1;
 
         response = response.replaceAll(" ", "").toUpperCase();
@@ -228,31 +214,6 @@ public class EngineFaults extends AppCompatActivity {
         } else {
             Log.w("Bluetooth", "P0 not found in response or not enough characters after P0.");
             return -1;
-        }
-    }
-    private void handleConnectButton() {
-        if (bluetooth.isConnected()) {
-            bluetooth.disconnect(going);
-            connectButton.setText("Connect");
-            connectionStatus.setText("OBD2 Status: Disconnected");
-            BTCN = false;
-            updateStatus("Connect to Bluetooth to scan");
-        } else {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            String deviceAddress = preferences.getString("selected_device_address", null);
-            if (deviceAddress != null) {
-                bluetooth.connect(deviceAddress);
-                if (bluetooth.isConnected()) {
-                    BTCN = true;
-                    connectButton.setText("Disconnect");
-                    connectionStatus.setText("OBD2 Status: Connected");
-                    updateStatus("Ready to scan"); // Update status when connected
-                }
-            } else {
-                connectionStatus.setText("OBD2 Status: No Device Selected");
-                Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
-                updateStatus("Connect to Bluetooth to scan");
-            }
         }
     }
     private void addCardView(String text) {
@@ -290,37 +251,30 @@ public class EngineFaults extends AppCompatActivity {
 
         gridLayout.addView(cardView);
     }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == Bluetooth.REQUEST_BLUETOOTH_CONNECT) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                String deviceAddress = preferences.getString("selected_device_address", null);
-                if (deviceAddress != null) {
-                    bluetooth.connect(deviceAddress);
-                    if (bluetooth.isConnected()) {
-                        connectButton.setText("Disconnect");
-                    }
-                } else {
-                    connectionStatus.setText("OBD2 Status: No Device Selected");
-                    Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                connectionStatus.setText("OBD2 Status: Permission Denied");
-                Toast.makeText(this, "Bluetooth permission denied. Allow it in the application settings.", Toast.LENGTH_LONG).show();
-            }
+        bluetooth.handlePermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (bluetooth.isConnected()) {
+            connectionStatus.setText("OBD2 Status: Connected");
+            connectButton.setText("Disconnect");
         }
+    }
+    @Override
+    protected void onPause(){
+        super.onPause();
+        bluetooth.disconnect();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        bluetooth.disconnect(true);
-    }
-    @Override
-    protected void onPause() {
-        super.onPause();
-        bluetooth.disconnect(true);
+        bluetooth.disconnect();
     }
 }

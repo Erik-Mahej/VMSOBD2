@@ -18,8 +18,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
-    private static boolean BTCN = false;
-    private static boolean going = false;
+
     private Bluetooth bluetooth;
     private TextView connectionStatus;
     private Button connectButton;
@@ -30,19 +29,17 @@ public class MainActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
+        //BLUETOOTH 1
         connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
 
         bluetooth = new Bluetooth(this, connectionStatus);
 
-        connectButton.setOnClickListener(v -> handleConnectButton());
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String deviceAddress = preferences.getString("selected_device_address", "");
+        bluetooth.handleConnectButton(connectButton, deviceAddress);
+        //BLUETOOTH 2
 
-        Intent intent = getIntent();
-        boolean BTCN = intent.getBooleanExtra("BTCN", false);
-
-        if (BTCN) {
-            handleConnectButton();
-        }
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -51,55 +48,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void handleConnectButton() {
-        if (bluetooth.isConnected()) {
-            bluetooth.disconnect(going);
-            connectButton.setText("Connect");
-            connectionStatus.setText("OBD2 Status: Disconnected");
-            BTCN = false;
-        } else {
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-            String deviceAddress = preferences.getString("selected_device_address", null);
-            if (deviceAddress != null) {
-                bluetooth.connect(deviceAddress);
-                if (bluetooth.isConnected()) {
-                    BTCN = true;
-                    connectButton.setText("Disconnect");
-                }
-            } else {
-                connectionStatus.setText("OBD2 Status: No Device Selected");
-                Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
-            }
-        }
-    }
 
+    //odkaz na metodu v Bluetooth tride
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == Bluetooth.REQUEST_BLUETOOTH_CONNECT) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-                String deviceAddress = preferences.getString("selected_device_address", null);
-                if (deviceAddress != null) {
-                    bluetooth.connect(deviceAddress);
-                    if (bluetooth.isConnected()) {
-                        connectButton.setText("Disconnect");
-                    }
-                } else {
-                    connectionStatus.setText("OBD2 Status: No Device Selected");
-                    Toast.makeText(this, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
-                }
-            } else {
-                connectionStatus.setText("OBD2 Status: Permission Denied");
-                Toast.makeText(this, "Bluetooth permission denied. Allow it in the aplication settings.", Toast.LENGTH_LONG).show();
-            }
-        }
+        bluetooth.handlePermissionsResult(requestCode, permissions, grantResults);
     }
 
+    //zde se pres intent prechazi do jinych aktivit
     public void Transport(View view) {
         Intent intent = null;
-        int viewId = view.getId(); // Store the view ID in a variable
-
+        int viewId = view.getId();
         if (viewId == R.id.btnDashboard) {
             intent = new Intent(MainActivity.this, carDashboard.class);
         } else if (viewId == R.id.btnStats) {
@@ -109,24 +69,31 @@ public class MainActivity extends AppCompatActivity {
         } else if (viewId == R.id.btnSettings) {
             intent = new Intent(MainActivity.this, AppSettings.class);
         } else {
-            // Handle the case where the view ID does not match any known button
-            return; // Exit the method if no valid button was pressed
+            return;
         }
-
-        // Put the extra and start the activity if intent is not null
         if (intent != null) {
-            intent.putExtra("BTCN", BTCN);
             startActivity(intent);
         }
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (bluetooth.isConnected()) {
+            connectionStatus.setText("OBD2 Status: Connected");
+            connectButton.setText("Disconnect");
+        }
+    }
+    @Override
+    protected void onPause(){
+        super.onPause();
+        bluetooth.disconnect();
+    }
+
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        bluetooth.disconnect(true);
-    }
-    @Override
-    protected void onPause() {
-        super.onPause();
-        bluetooth.disconnect(true);
+        bluetooth.disconnect();
     }
 }
