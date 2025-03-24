@@ -1,6 +1,7 @@
 package com.example.vmsobd2;
 
 import android.animation.ValueAnimator;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -24,6 +25,10 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.app.AlertDialog;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,6 +44,8 @@ public class carDashboard extends AppCompatActivity {
     private Runnable obdPollingRunnable;
     private boolean switchik = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private DatabaseHelper dbHelper;
+    private carDashboard.ResponseManager ResponseManager;
 
 
     private GaugeMetric gauge1Metric = GaugeMetric.RPM;
@@ -79,6 +86,11 @@ public class carDashboard extends AppCompatActivity {
         String deviceAddress = preferences.getString("selected_device_address", "");
         bluetooth.handleConnectButton(connectButton, deviceAddress);
         //BLUETOOTH 2
+
+        //DATABASE 1
+        ResponseManager = new carDashboard.ResponseManager(this);
+
+        //DATABASE 2
 
         //zde se v shared preferences uklada rozlozeni jednotlivych tachometru
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -253,7 +265,98 @@ public class carDashboard extends AppCompatActivity {
             default: return "Unknown";
         }
     }
+    public class ResponseManager {
+        private final DatabaseHelper dbHelper;
+        private final Set<String> storedResponses = new HashSet<>();
+        private final Map<String, Integer> hexCountMap = new HashMap<>();
+        private final Map<String, String> formulaMap = new HashMap<>();
+        private boolean initialized = false;
 
+        public ResponseManager(Context context) {
+            this.dbHelper = new DatabaseHelper(context);
+        }
+
+        public int parseResponse(String response) {
+            String[] responses = response.split(" ");
+
+            if (!initialized) {
+                for (String res : responses) {
+                    storedResponses.add(res);
+                    hexCountMap.put(res, dbHelper.getCodeHexCount(res));
+                    formulaMap.put(res, dbHelper.getCodeFormula(res));
+                }
+                initialized = true;
+                return 1; //poprve
+            } else {
+                for (String res : responses) {
+                    if (!storedResponses.contains(res)) {
+                        return -1;
+                    }//dalsi pokusy
+                }
+            }
+            return 0;
+        }
+
+        public int getHexCount(String response) {
+            return hexCountMap.getOrDefault(response, -1);
+        }
+
+        public String getFormula(String response) {
+            return formulaMap.getOrDefault(response, "");
+        }
+    }
+
+    /*
+    public class Gauge {
+        private GaugeMetric metric;
+        private int value;
+        private int hexCount;
+        private String formula;
+
+        public Gauge(GaugeMetric metric) {
+            this.metric = metric;
+            this.value = -1;
+            this.hexCount = -1;
+            this.formula = "";
+        }
+
+        public GaugeMetric getMetric() {
+            return metric;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void setValue(int value) {
+            this.value = value;
+        }
+
+        public int getHexCount() {
+            return hexCount;
+        }
+
+        public void setHexCount(int hexCount) {
+            this.hexCount = hexCount;
+        }
+
+        public String getFormula() {
+            return formula;
+        }
+
+        public void setFormula(String formula) {
+            this.formula = formula;
+        }
+
+        public void updateFromResponse(String response, ResponseManager responseManager) {
+            this.hexCount = responseManager.getHexCount(metric);
+            this.formula = responseManager.getCodeFormula(metric);
+
+            this.value = parseResponse(response);
+        }
+    }
+
+     */
 
     public int parseRpm(String response) {
         if (response == null) return -1;

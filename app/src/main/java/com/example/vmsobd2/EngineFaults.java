@@ -1,5 +1,6 @@
 package com.example.vmsobd2;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -31,6 +32,8 @@ public class EngineFaults extends AppCompatActivity {
     private TextView statusText;
     private Button connectButton;
     private GridLayout gridLayout;
+    private DatabaseHelper dbHelper;
+    private FaultManager faultManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +59,8 @@ public class EngineFaults extends AppCompatActivity {
         bluetooth.handleConnectButton(connectButton, deviceAddress);
         //BLUETOOTH 2
 
+        faultManager = new FaultManager(this);
+
         gridLayout = findViewById(R.id.gridLayout);
 
 
@@ -63,6 +68,12 @@ public class EngineFaults extends AppCompatActivity {
         checkBluetoothConnection();
 
 
+    }
+    public class FaultManager {
+        private DatabaseHelper dbHelper;
+        public FaultManager(Context context) {
+            dbHelper = new DatabaseHelper(context);
+        }
     }
 
     private void checkBluetoothConnection() {
@@ -167,16 +178,13 @@ public class EngineFaults extends AppCompatActivity {
     }
 
     public String assignFault(int responseCode) {
-        switch (responseCode) {
-            case 300:
-                return "Fault Code: P0300 - Random/multiple cylinder misfire detected";
-            case 420:
-                return "Fault Code: P0420 - Catalytic converter efficiency below threshold";
-            case 171:
-                return "Fault Code: P0171 - System too lean (Bank 1)";
-            default:
-                return "Unknown Fault Code: " + Integer.toHexString(responseCode).toUpperCase();
+        String description = dbHelper.getFaultDescription(responseCode);
+
+        if (description.startsWith("Unknown Fault Code")) {
+            return description;
         }
+
+        return description;
     }
     public static int decodeResponseCount(String response) {
         if (response == null) return -1;
