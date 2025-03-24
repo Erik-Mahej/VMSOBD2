@@ -32,7 +32,7 @@ android {
 }
 
 dependencies {
-
+    implementation(libs.evalex)
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -42,3 +42,6 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     implementation(libs.speedviewlib)
 }
+
+
+

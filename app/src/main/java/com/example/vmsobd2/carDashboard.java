@@ -19,18 +19,22 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.activity.EdgeToEdge;
 
 import com.github.anastr.speedviewlib.DeluxeSpeedView;
+import com.udojava.evalex.Expression;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.app.AlertDialog;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class carDashboard extends AppCompatActivity {
@@ -45,7 +49,7 @@ public class carDashboard extends AppCompatActivity {
     private boolean switchik = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DatabaseHelper dbHelper;
-    private carDashboard.ResponseManager ResponseManager;
+
 
 
     private GaugeMetric gauge1Metric = GaugeMetric.RPM;
@@ -88,7 +92,8 @@ public class carDashboard extends AppCompatActivity {
         //BLUETOOTH 2
 
         //DATABASE 1
-        ResponseManager = new carDashboard.ResponseManager(this);
+
+        dbHelper = new DatabaseHelper(this);
 
         //DATABASE 2
 
@@ -168,10 +173,13 @@ public class carDashboard extends AppCompatActivity {
     }
     private void updateGaugeAsync(DeluxeSpeedView view, GaugeMetric metric) {
         executor.execute(() -> {
-            int value = getMetricValue(metric);
+            double value = getMetricValue(metric);
             if (value >= 0) {
+                float valueFloat = (float) value;
+
                 runOnUiThread(() -> {
-                    animateGauge(view, value);
+                    //view.speedTo(valueFloat, 0);
+                    animateGauge(view, (int) valueFloat);
                 });
             }
         });
@@ -180,7 +188,7 @@ public class carDashboard extends AppCompatActivity {
     private void animateGauge(DeluxeSpeedView view, int targetValue) {
         float currentValue = view.getSpeed();
         ValueAnimator animator = ValueAnimator.ofInt((int) currentValue, targetValue);
-        animator.setDuration(500);
+        animator.setDuration(300);
         animator.addUpdateListener(animation -> {
             int animatedValue = (int) animation.getAnimatedValue();
             view.speedTo(animatedValue, 0);
@@ -213,21 +221,30 @@ public class carDashboard extends AppCompatActivity {
                 break;
         }
     }
-    private int getMetricValue(GaugeMetric metric) {
+    private double getMetricValue(GaugeMetric metric) {
         String response;
-        int value = -1;
+        float value = -1;
 
         switch (metric) {
             case RPM:
                 response = bluetooth.sendObdCommand("010C");
                 moretext.setText("RPM Response: " + response);
-                value = parseRpm(response);
+                String formula = parseResponse(response,dbHelper);
+                try {
+                    Expression expression = new Expression(formula);
+                    BigDecimal result = expression.eval();
+                    value = result.floatValue();
+                } catch (Expression.ExpressionException e) {
+                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+                }
+
                 break;
             case SPEED:
-                response = bluetooth.sendObdCommand("010D");
-                value = parseSpeed(response);
+                //response = bluetooth.sendObdCommand("010D");
+                //value = parseSpeed(response);
                 break;
             case FUEL_LEVEL:
+                /*
                 response = bluetooth.sendObdCommand("012F");
                 if (response != null && response.startsWith("412F") && response.length() >= 6) {
                     try {
@@ -236,14 +253,22 @@ public class carDashboard extends AppCompatActivity {
                         Log.e("OBD", "Fuel parse error: " + e.getMessage());
                     }
                 }
+
+                 */
                 break;
             case AVG_CONSUMPTION:
+                /*
                 response = bluetooth.sendObdCommand("015F");
                 value = parseConsumption(response);
+
+                 */
                 break;
             case CURRENT_CONSUMPTION:
+                /*
                 response = bluetooth.sendObdCommand("015E");
                 value = parseConsumption(response);
+
+                 */
                 break;
         }
         return value;
@@ -265,167 +290,44 @@ public class carDashboard extends AppCompatActivity {
             default: return "Unknown";
         }
     }
-    public class ResponseManager {
-        private final DatabaseHelper dbHelper;
-        private final Set<String> storedResponses = new HashSet<>();
-        private final Map<String, Integer> hexCountMap = new HashMap<>();
-        private final Map<String, String> formulaMap = new HashMap<>();
-        private boolean initialized = false;
 
-        public ResponseManager(Context context) {
-            this.dbHelper = new DatabaseHelper(context);
+     public String parseResponse(String response, DatabaseHelper dbHelper) {
+        if (response == null) {
+            Log.e("ParseResponseError", "Response is null.");
+            return "Invalid response";
         }
 
-        public int parseResponse(String response) {
-            String[] responses = response.split(" ");
+        Pattern pattern = Pattern.compile("41[0-9A-Fa-f]{2}");
+        Matcher matcher = pattern.matcher(response);
 
-            if (!initialized) {
-                for (String res : responses) {
-                    storedResponses.add(res);
-                    hexCountMap.put(res, dbHelper.getCodeHexCount(res));
-                    formulaMap.put(res, dbHelper.getCodeFormula(res));
-                }
-                initialized = true;
-                return 1; //poprve
-            } else {
-                for (String res : responses) {
-                    if (!storedResponses.contains(res)) {
-                        return -1;
-                    }//dalsi pokusy
-                }
-            }
-            return 0;
-        }
+        if (matcher.find()) {
+            String pid = matcher.group();  //tady to hleda znaky co se podobaji jakemukoliv PID
+            ObdFormula formulaData = dbHelper.getFormulaByPid(pid);
 
-        public int getHexCount(String response) {
-            return hexCountMap.getOrDefault(response, -1);
-        }
+            if (formulaData != null) {
+                int index = response.indexOf(pid);
+                String hexPart = response.substring(index + 4);  // skipnuti PID
 
-        public String getFormula(String response) {
-            return formulaMap.getOrDefault(response, "");
-        }
-    }
+                // na zaklade toho jestli ma PID 1 nebo 2 HEX hodnoty tak se pokracuje dal
+                String A_str = null, B_str = null;
+                if (formulaData.hexCount >= 1 && hexPart.length() >= 2)
+                    A_str = hexPart.substring(0, 2);
+                if (formulaData.hexCount == 2 && hexPart.length() >= 4)
+                    B_str = hexPart.substring(2, 4);
 
-    /*
-    public class Gauge {
-        private GaugeMetric metric;
-        private int value;
-        private int hexCount;
-        private String formula;
+                int A = A_str != null ? Integer.parseInt(A_str, 16) : 0;
+                int B = B_str != null ? Integer.parseInt(B_str, 16) : 0;
 
-        public Gauge(GaugeMetric metric) {
-            this.metric = metric;
-            this.value = -1;
-            this.hexCount = -1;
-            this.formula = "";
-        }
+                // zde se vymeni hodnota ze vzorce za hodnoty z OBD2
+                String evalFormula = formulaData.formula
+                        .replace("A", String.valueOf(A))
+                        .replace("B", String.valueOf(B));
 
-        public GaugeMetric getMetric() {
-            return metric;
-        }
-
-        public int getValue() {
-            return value;
-        }
-
-        public void setValue(int value) {
-            this.value = value;
-        }
-
-        public int getHexCount() {
-            return hexCount;
-        }
-
-        public void setHexCount(int hexCount) {
-            this.hexCount = hexCount;
-        }
-
-        public String getFormula() {
-            return formula;
-        }
-
-        public void setFormula(String formula) {
-            this.formula = formula;
-        }
-
-        public void updateFromResponse(String response, ResponseManager responseManager) {
-            this.hexCount = responseManager.getHexCount(metric);
-            this.formula = responseManager.getCodeFormula(metric);
-
-            this.value = parseResponse(response);
-        }
-    }
-
-     */
-
-    public int parseRpm(String response) {
-        if (response == null) return -1;
-
-        response = response.replaceAll(" ", "").toUpperCase();
-
-        int index = response.indexOf("410C");
-        if (index != -1 && index + 8 <= response.length()) {
-            try {
-                String A_str = response.substring(index + 4, index + 6);
-                String B_str = response.substring(index + 6, index + 8);
-                String both = A_str+B_str;
-                int Value = Integer.parseInt(both, 16);
-
-                return Value / 4;
-            } catch (Exception e) {
-                Log.e("Bluetooth", "RPM parse failed: " + e.getMessage());
-                return -1;
-            }
-        } else {
-            Log.w("Bluetooth", "410C not found in response.");
-            return -1;
-        }
-    }
-    public int parseSpeed(String response) {
-        if (response == null) return -1;
-
-        response = response.replaceAll(" ", "").toUpperCase();
-
-        int index = response.indexOf("410D");
-        if (index != -1 && index + 8 <= response.length()) {
-            try {
-                String A_str = response.substring(index + 4, index + 6);
-                String B_str = response.substring(index + 6, index + 8);
-                String both = A_str+B_str;
-                int Value = Integer.parseInt(both, 16);
-
-                return Value ;
-            } catch (Exception e) {
-                Log.e("Bluetooth", "Speed parse failed: " + e.getMessage());
-                return -1;
-            }
-        } else {
-            Log.w("Bluetooth", "410D not found in response.");
-            return -1;
-        }
-    }
-
-    public int parseConsumption(String response) {
-        if (response == null) return -1;
-
-        response = response.replaceAll(" ", "").toUpperCase();
-
-        //nedodelana logika
-        if ((response.startsWith("415E") || response.startsWith("415F")) && response.length() >= 6) {
-            try {
-                String A_str = response.substring(4, 6);
-                int A = Integer.parseInt(A_str, 16);
-
-                return A; // or (int)(A * 0.1) for decimal-like representation
-                //return (int)(A * 0.1); // display as 3.4 L/100km if A = 34
-
-            } catch (Exception e) {
-                Log.e("OBD", "Consumption parse error: " + e.getMessage());
+                return evalFormula;
             }
         }
-        return -1;
+        return "Unknown PID or format";
     }
-
 
     public void goBack(View view) {
         if (view.getId() == R.id.btnBack) {
@@ -450,15 +352,23 @@ public class carDashboard extends AppCompatActivity {
         }
     }
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
+        handler.removeCallbacks(obdPollingRunnable);
         bluetooth.disconnect();
     }
-
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         bluetooth.disconnect();
+        handler.removeCallbacksAndMessages(null);
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
+        if (executor != null && !executor.isShutdown()) {
+            executor.shutdownNow();
+        }
     }
+
 }

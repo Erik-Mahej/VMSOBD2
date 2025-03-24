@@ -33,7 +33,7 @@ public class EngineFaults extends AppCompatActivity {
     private Button connectButton;
     private GridLayout gridLayout;
     private DatabaseHelper dbHelper;
-    private FaultManager faultManager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,7 +59,8 @@ public class EngineFaults extends AppCompatActivity {
         bluetooth.handleConnectButton(connectButton, deviceAddress);
         //BLUETOOTH 2
 
-        faultManager = new FaultManager(this);
+
+        dbHelper = new DatabaseHelper(this);
 
         gridLayout = findViewById(R.id.gridLayout);
 
@@ -69,12 +70,7 @@ public class EngineFaults extends AppCompatActivity {
 
 
     }
-    public class FaultManager {
-        private DatabaseHelper dbHelper;
-        public FaultManager(Context context) {
-            dbHelper = new DatabaseHelper(context);
-        }
-    }
+
 
     private void checkBluetoothConnection() {
         if (bluetooth != null && bluetooth.isConnected()) {
@@ -166,25 +162,8 @@ public class EngineFaults extends AppCompatActivity {
         }
         return 0;
     }
-    private void requestEngineFaults(String fault) {
-        String response = bluetooth.sendObdCommand(fault);
-        if (response != null) {
-            int decodedResponse = decodeResponse(response);
-            String faultDescription = assignFault(decodedResponse);
-            addCardView(faultDescription);
-        } else {
-            Log.e("EngineFaults", "No response received for command: " + fault);
-        }
-    }
-
     public String assignFault(int responseCode) {
-        String description = dbHelper.getFaultDescription(responseCode);
-
-        if (description.startsWith("Unknown Fault Code")) {
-            return description;
-        }
-
-        return description;
+        return dbHelper.getFaultDescription(responseCode);
     }
     public static int decodeResponseCount(String response) {
         if (response == null) return -1;
