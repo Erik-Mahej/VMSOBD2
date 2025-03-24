@@ -134,6 +134,59 @@ public class carDashboard extends AppCompatActivity {
         handler.post(obdPollingRunnable);
     }
 
+    private double getMetricValue(GaugeMetric metric) {
+        String response;
+        float value = -1;
+
+        switch (metric) {
+            case RPM:
+                response = bluetooth.sendObdCommand("010C");
+                moretext.setText("RPM Response: " + response);
+                String formula = parseResponse(response,dbHelper);
+                try {
+                    Expression expression = new Expression(formula);
+                    BigDecimal result = expression.eval();
+                    value = result.floatValue();
+                } catch (Expression.ExpressionException e) {
+                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+                }
+
+                break;
+            case SPEED:
+                //response = bluetooth.sendObdCommand("010D");
+                //value = parseSpeed(response);
+                break;
+            case FUEL_LEVEL:
+                /*
+                response = bluetooth.sendObdCommand("012F");
+                if (response != null && response.startsWith("412F") && response.length() >= 6) {
+                    try {
+                        value = Integer.parseInt(response.substring(4, 6), 16) * 100 / 255;
+                    } catch (Exception e) {
+                        Log.e("OBD", "Fuel parse error: " + e.getMessage());
+                    }
+                }
+
+                 */
+                break;
+            case AVG_CONSUMPTION:
+                /*
+                response = bluetooth.sendObdCommand("015F");
+                value = parseConsumption(response);
+
+                 */
+                break;
+            case CURRENT_CONSUMPTION:
+                /*
+                response = bluetooth.sendObdCommand("015E");
+                value = parseConsumption(response);
+
+                 */
+                break;
+        }
+        return value;
+    }
+
     private void showMetricSelectionDialog(int gaugeNumber) {
         final String[] metrics = {"Engine RPM", "Car Speed", "Fuel Level", "Avg Consumption", "Current Consumption"};
         new AlertDialog.Builder(this)
@@ -197,81 +250,14 @@ public class carDashboard extends AppCompatActivity {
     }
 
     private void setGaugeUnit(DeluxeSpeedView view, GaugeMetric metric) {
-        switch (metric) {
-            case RPM:
-                view.setUnit("RPM");
-                view.setMaxSpeed(6000);
-                view.setWithTremble(false);
-                break;
-            case SPEED:
-                view.setUnit("km/h");
-                view.setMaxSpeed(240);
-                view.setWithTremble(false);
-                break;
-            case FUEL_LEVEL:
-                view.setUnit("%");
-                view.setMaxSpeed(100);
-                view.setWithTremble(false);
-                break;
-            case AVG_CONSUMPTION:
-            case CURRENT_CONSUMPTION:
-                view.setUnit("L/100km");
-                view.setMaxSpeed(20);
-                view.setWithTremble(false);
-                break;
+        DatabaseHelper dbHelper = new DatabaseHelper(this);
+        GaugeSetting gaugeSetting = dbHelper.getGaugeSetting(metric.name()); // Get settings from the database
+
+        if (gaugeSetting != null) {
+            view.setUnit(gaugeSetting.getUnit());  // Set the unit
+            view.setMaxSpeed(gaugeSetting.getMaxSpeed());  // Set the max speed
+            view.setWithTremble(false);  // Disable tremble effect (optional)
         }
-    }
-    private double getMetricValue(GaugeMetric metric) {
-        String response;
-        float value = -1;
-
-        switch (metric) {
-            case RPM:
-                response = bluetooth.sendObdCommand("010C");
-                moretext.setText("RPM Response: " + response);
-                String formula = parseResponse(response,dbHelper);
-                try {
-                    Expression expression = new Expression(formula);
-                    BigDecimal result = expression.eval();
-                    value = result.floatValue();
-                } catch (Expression.ExpressionException e) {
-                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
-                }
-
-                break;
-            case SPEED:
-                //response = bluetooth.sendObdCommand("010D");
-                //value = parseSpeed(response);
-                break;
-            case FUEL_LEVEL:
-                /*
-                response = bluetooth.sendObdCommand("012F");
-                if (response != null && response.startsWith("412F") && response.length() >= 6) {
-                    try {
-                        value = Integer.parseInt(response.substring(4, 6), 16) * 100 / 255;
-                    } catch (Exception e) {
-                        Log.e("OBD", "Fuel parse error: " + e.getMessage());
-                    }
-                }
-
-                 */
-                break;
-            case AVG_CONSUMPTION:
-                /*
-                response = bluetooth.sendObdCommand("015F");
-                value = parseConsumption(response);
-
-                 */
-                break;
-            case CURRENT_CONSUMPTION:
-                /*
-                response = bluetooth.sendObdCommand("015E");
-                value = parseConsumption(response);
-
-                 */
-                break;
-        }
-        return value;
     }
 
     private void updateGaugeLabelsText() {

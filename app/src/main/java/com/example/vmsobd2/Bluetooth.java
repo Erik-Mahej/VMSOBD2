@@ -191,7 +191,7 @@ public class Bluetooth {
     public String sendObdCommand(String command) {
         try {
             sendCommand(command);
-            Thread.sleep(200); //delay
+            Thread.sleep(10); //delay
             return readResponse();
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();

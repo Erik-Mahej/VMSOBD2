@@ -10,7 +10,7 @@ import android.util.Log;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "OBD2CODES.db";
-    private static final int DATABASE_VERSION = 6;
+    private static final int DATABASE_VERSION = 10;
 
     private static final String createTable1 = "CREATE TABLE faultCodes (" +
                                                 "code INTEGER PRIMARY KEY," +
@@ -47,10 +47,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO obd_formulas (pid, hex_count, formula) VALUES ('4105', 1, 'A - 40')");
 
         db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('RPM', 'RPM', 6000)");
-        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('Speed', 'km/h', 240)");
-        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('Fuel Level', '%', 100)");
-        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('Avg Consumption', 'L/100km', 20)");
-        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('Current Consumption', 'L/100km', 20)");
+        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('SPEED', 'km/h', 240)");
+        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('FUEL_LEVEL', '%', 100)");
+        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('AVG_CONSUMPTION', 'L/100km', 20)");
+        db.execSQL("INSERT INTO gauge_settings (metric_name, unit, max_speed) VALUES ('CURRENT_CONSUMPTION', 'L/100km', 20)");
     }
 
     @Override
@@ -88,6 +88,35 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             String formula = cursor.getString(2);
             cursor.close();
             return new ObdFormula(code, hexCount, formula);
+        } else {
+            cursor.close();
+            return null;
+        }
+    }
+
+    public GaugeSetting getGaugeSetting(String metricName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        // Query the database for the gauge setting based on metric name
+        Cursor cursor = db.query("gauge_settings", new String[]{"metric_name", "unit", "max_speed"},
+                "metric_name = ?", new String[]{metricName}, null, null, null);
+
+        // Check if cursor is not null and contains results
+        if (cursor != null && cursor.moveToFirst()) {
+            // Get the index of each column
+            int unitColumnIndex = cursor.getColumnIndex("unit");
+            int maxSpeedColumnIndex = cursor.getColumnIndex("max_speed");
+
+            // Check if both columns exist
+            if (unitColumnIndex != -1 && maxSpeedColumnIndex != -1) {
+                String unit = cursor.getString(unitColumnIndex);
+                int maxSpeed = cursor.getInt(maxSpeedColumnIndex);
+                cursor.close();
+                return new GaugeSetting(metricName, unit, maxSpeed);
+            } else {
+                Log.e("DatabaseHelper", "Column(s) not found in the database.");
+                cursor.close();
+                return null;
+            }
         } else {
             cursor.close();
             return null;
