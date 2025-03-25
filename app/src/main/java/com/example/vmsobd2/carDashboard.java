@@ -53,11 +53,11 @@ public class carDashboard extends AppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DatabaseHelper dbHelper;
 
-
+    private final Map<DeluxeSpeedView, ValueAnimator> gaugeAnimators = new HashMap<>();
 
     private GaugeMetric gauge1Metric = GaugeMetric.RPM;
     private GaugeMetric gauge2Metric = GaugeMetric.SPEED;
-    private GaugeMetric gauge3Metric = GaugeMetric.FUEL_LEVEL;
+    private GaugeMetric gauge3Metric = GaugeMetric.ENGINE_REFERENCE_TORQUE;
 
 
     @Override
@@ -66,6 +66,8 @@ public class carDashboard extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
 
+        Toast.makeText(carDashboard.this, "Hold gauge to change showed metric.", Toast.LENGTH_SHORT).show();
+
         //Deklarace
         speedView1 = findViewById(R.id.speedView1);
         speedView2 = findViewById(R.id.speedView2);
@@ -73,7 +75,7 @@ public class carDashboard extends AppCompatActivity {
         label1 = findViewById(R.id.textView1);
         label2 = findViewById(R.id.textView2);
         label3 = findViewById(R.id.textView3);
-        //moretext=findViewById(R.id.moretext);
+        moretext=findViewById(R.id.moretext);
 
         switch1 = findViewById(R.id.moreswitch);
         //tento switch ovlada jestli je zapnut presos dat
@@ -144,14 +146,11 @@ public class carDashboard extends AppCompatActivity {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         gauge1Metric = GaugeMetric.valueOf(prefs.getString("gauge1Metric", GaugeMetric.RPM.name()));
         gauge2Metric = GaugeMetric.valueOf(prefs.getString("gauge2Metric", GaugeMetric.SPEED.name()));
-        gauge3Metric = GaugeMetric.valueOf(prefs.getString("gauge3Metric", GaugeMetric.FUEL_LEVEL.name()));
+        gauge3Metric = GaugeMetric.valueOf(prefs.getString("gauge3Metric", GaugeMetric.ENGINE_REFERENCE_TORQUE.name()));
 
         updateGaugeLabelsAndUnits();
         updateGaugeLabelsText();
 
-        speedView1.setOnClickListener(v -> showMetricSelectionDialog(1));
-        speedView2.setOnClickListener(v -> showMetricSelectionDialog(2));
-        speedView3.setOnClickListener(v -> showMetricSelectionDialog(3));
 
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -163,17 +162,21 @@ public class carDashboard extends AppCompatActivity {
         obdPollingRunnable = new Runnable() {
             @Override
             public void run() {
-                if (bluetooth.isConnected() && switchik) {
-                    updateGaugeAsync(speedView1, gauge1Metric);
-                    updateGaugeAsync(speedView2, gauge2Metric);
-                    updateGaugeAsync(speedView3, gauge3Metric);
-
-                }
-                if(bluetooth.isConnected()){
+                if (bluetooth.isConnected()) {
+                    if (switchik) {
+                        updateGaugeAsync(speedView1, gauge1Metric);
+                        updateGaugeAsync(speedView2, gauge2Metric);
+                        updateGaugeAsync(speedView3, gauge3Metric);
+                    } else {
+                        runOnUiThread(() -> {
+                            resetGauges();
+                        });
+                    }
                     switch1.setEnabled(true);
-                } else if (!bluetooth.isConnected()) {
+                } else {
                     switch1.setEnabled(false);
                     switch1.setChecked(false);
+                    runOnUiThread(() -> resetGauges());
                 }
 
                 handler.postDelayed(this, 50);
@@ -181,64 +184,113 @@ public class carDashboard extends AppCompatActivity {
         };
 
 
+
         handler.post(obdPollingRunnable);
     }
+
+    private void resetGauges() {
+        speedView1.speedTo(0, 0);
+        speedView2.speedTo(0, 0);
+        speedView3.speedTo(0, 0);
+    }
+
 
     private double getMetricValue(GaugeMetric metric) {
         String response;
         float value = -1;
+        String formula;
 
         switch (metric) {
             case RPM:
                 response = bluetooth.sendObdCommand("010C");
-                moretext.setText("RPM Response: " + response);
-                String formula = parseResponse(response,dbHelper);
+                formula = parseResponse(response, dbHelper);
+                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
+                    Log.e("FormulaError", "Invalid formula for RPM: " + formula);
+                    return value;
+                }
                 try {
                     Expression expression = new Expression(formula);
                     BigDecimal result = expression.eval();
                     value = result.floatValue();
+                    Log.d("OBD", "VALUERPM: " + value);
+                } catch (Expression.ExpressionException e) {
+                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+                }
+                break;
+
+            case SPEED:
+                response = bluetooth.sendObdCommand("010D");
+                moretext.setText("DEBUG Response: " + response);
+                formula = parseResponse(response, dbHelper);
+                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
+                    Log.e("FormulaError", "Invalid formula for SPEED: " + formula);
+                    return value;
+                }
+                try {
+                    Expression expression = new Expression(formula);
+                    BigDecimal result = expression.eval();
+                    value = result.floatValue();
+                    Log.d("OBD", "VALUESPEED: " + value);
+                } catch (Expression.ExpressionException e) {
+                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+                }
+                break;
+
+            case ENGINE_REFERENCE_TORQUE:
+                response = bluetooth.sendObdCommand("0163");
+
+                formula = parseResponse(response, dbHelper);
+                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
+                    Log.e("FormulaError", "Invalid formula for TORQUE: " + formula);
+                    return value;
+                }
+                try {
+                    Expression expression = new Expression(formula);
+                    BigDecimal result = expression.eval();
+                    value = result.floatValue();
+                    Log.d("OBD", "VALUETORQUE: " + value);
                 } catch (Expression.ExpressionException e) {
                     Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
                 }
 
-                break;
-            case SPEED:
-                //response = bluetooth.sendObdCommand("010D");
-                //value = parseSpeed(response);
-                break;
-            case FUEL_LEVEL:
-                /*
-                response = bluetooth.sendObdCommand("012F");
-                if (response != null && response.startsWith("412F") && response.length() >= 6) {
-                    try {
-                        value = Integer.parseInt(response.substring(4, 6), 16) * 100 / 255;
-                    } catch (Exception e) {
-                        Log.e("OBD", "Fuel parse error: " + e.getMessage());
-                    }
-                }
 
-                 */
                 break;
-            case AVG_CONSUMPTION:
                 /*
+            case AVG_CONSUMPTION:
+
                 response = bluetooth.sendObdCommand("015F");
                 value = parseConsumption(response);
 
-                 */
+
+                response = bluetooth.sendObdCommand("0131");
+                formula = parseResponse(response, dbHelper);
+                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
+                    Log.e("FormulaError", "Invalid formula for SPEED: " + formula);
+                    return value; // Return the default value or handle it
+                }
+                try {
+                    Expression expression = new Expression(formula);
+                    BigDecimal result = expression.eval();
+                    value = result.floatValue();
+                    Log.d("OBD", "VALUEAVG: " + value);
+                } catch (Expression.ExpressionException e) {
+                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+                }
                 break;
             case CURRENT_CONSUMPTION:
-                /*
+
                 response = bluetooth.sendObdCommand("015E");
                 value = parseConsumption(response);
 
-                 */
+
                 break;
+                */
         }
         return value;
     }
 
     private void showMetricSelectionDialog(int gaugeNumber) {
-        final String[] metrics = {"Engine RPM", "Car Speed", "Fuel Level", "Avg Consumption", "Current Consumption"};
+        final String[] metrics = {"Engine RPM", "Car Speed", "Torque"};
         new AlertDialog.Builder(this)
                 .setTitle("Select Metric")
                 .setItems(metrics, (dialog, which) -> {
@@ -281,17 +333,23 @@ public class carDashboard extends AppCompatActivity {
                 float valueFloat = (float) value;
 
                 runOnUiThread(() -> {
-                    //view.speedTo(valueFloat, 0);
-                    animateGauge(view, (int) valueFloat);
+                    if (switchik) {
+                        animateGauge(view, (int) valueFloat);
+                    }
                 });
             }
         });
     }
 
     private void animateGauge(DeluxeSpeedView view, int targetValue) {
+        ValueAnimator existingAnimator = gaugeAnimators.get(view);
+        if (existingAnimator != null && existingAnimator.isRunning()) {
+            existingAnimator.cancel(); // Prevent animation stacking
+        }
+
         float currentValue = view.getSpeed();
         ValueAnimator animator = ValueAnimator.ofInt((int) currentValue, targetValue);
-        animator.setDuration(300);
+        animator.setDuration(150);
         animator.addUpdateListener(animation -> {
             int animatedValue = (int) animation.getAnimatedValue();
             view.speedTo(animatedValue, 0);
@@ -320,9 +378,10 @@ public class carDashboard extends AppCompatActivity {
         switch (metric) {
             case RPM: return "Engine RPM";
             case SPEED: return "Car Speed";
-            case FUEL_LEVEL: return "Fuel Level";
-            case AVG_CONSUMPTION: return "Avg Consumption";
-            case CURRENT_CONSUMPTION: return "Current Consumption";
+            case ENGINE_REFERENCE_TORQUE: return "Torque";
+            //case FUEL_LEVEL: return "Fuel Level";
+            //case AVG_CONSUMPTION: return "Avg Consumption";
+            //case CURRENT_CONSUMPTION: return "Current Consumption";
             default: return "Unknown";
         }
     }
@@ -332,13 +391,16 @@ public class carDashboard extends AppCompatActivity {
             Log.e("ParseResponseError", "Response is null.");
             return "Invalid response";
         }
-
+        String evalFormula = null;
         Pattern pattern = Pattern.compile("41[0-9A-Fa-f]{2}");
         Matcher matcher = pattern.matcher(response);
 
         if (matcher.find()) {
             String pid = matcher.group();  //tady to hleda znaky co se podobaji jakemukoliv PID
             ObdFormula formulaData = dbHelper.getFormulaByPid(pid);
+            Log.d("OBD", "PID: " + pid);
+            Log.d("OBD", "Formula from DB: " + formulaData.formula);
+            Log.d("OBD", "Hex Count: " + formulaData.hexCount);
 
             if (formulaData != null) {
                 int index = response.indexOf(pid);
@@ -346,18 +408,26 @@ public class carDashboard extends AppCompatActivity {
 
                 // na zaklade toho jestli ma PID 1 nebo 2 HEX hodnoty tak se pokracuje dal
                 String A_str = null, B_str = null;
-                if (formulaData.hexCount >= 1 && hexPart.length() >= 2)
+
+                if (formulaData.hexCount == 1 && hexPart.length() >= 2) {
                     A_str = hexPart.substring(0, 2);
-                if (formulaData.hexCount == 2 && hexPart.length() >= 4)
-                    B_str = hexPart.substring(2, 4);
+                } else if (formulaData.hexCount == 2 && hexPart.length() >= 4) {
+                    A_str = hexPart.substring(0, 2); // Get A
+                    B_str = hexPart.substring(2, 4); // Get B
+                }
+
 
                 int A = A_str != null ? Integer.parseInt(A_str, 16) : 0;
                 int B = B_str != null ? Integer.parseInt(B_str, 16) : 0;
 
-                // zde se vymeni hodnota ze vzorce za hodnoty z OBD2
-                String evalFormula = formulaData.formula
-                        .replace("A", String.valueOf(A))
-                        .replace("B", String.valueOf(B));
+                if (formulaData.hexCount == 1 && hexPart.length() >= 2) {
+                    evalFormula = formulaData.formula.replace("A", String.valueOf(A));
+                } else if (formulaData.hexCount == 2 && hexPart.length() >= 4) {
+                    evalFormula = formulaData.formula
+                            .replace("A", String.valueOf(A))
+                            .replace("B", String.valueOf(B));
+                }
+
 
                 return evalFormula;
             }
