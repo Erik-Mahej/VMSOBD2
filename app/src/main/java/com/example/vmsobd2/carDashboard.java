@@ -7,6 +7,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -20,6 +22,7 @@ import androidx.activity.EdgeToEdge;
 
 import com.github.anastr.speedviewlib.DeluxeSpeedView;
 import com.udojava.evalex.Expression;
+
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -70,15 +73,55 @@ public class carDashboard extends AppCompatActivity {
         label1 = findViewById(R.id.textView1);
         label2 = findViewById(R.id.textView2);
         label3 = findViewById(R.id.textView3);
-        moretext=findViewById(R.id.moretext);
+        //moretext=findViewById(R.id.moretext);
 
         switch1 = findViewById(R.id.moreswitch);
         //tento switch ovlada jestli je zapnut presos dat
+        switch1.setEnabled(false);
+
         switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            switchik = isChecked;
-            String message = isChecked ? "Live Data ON" : "Live Data OFF";
-            Toast.makeText(carDashboard.this, message, Toast.LENGTH_SHORT).show();
+            if (!bluetooth.isConnected() && isChecked) {
+                switch1.setChecked(false);
+                Toast.makeText(carDashboard.this, "Bluetooth must be connected!", Toast.LENGTH_SHORT).show();
+            } else {
+                switchik = isChecked;
+                String message = isChecked ? "Live Data ON" : "Live Data OFF";
+                Toast.makeText(carDashboard.this, message, Toast.LENGTH_SHORT).show();
+            }
         });
+
+        speedView1.setOnLongClickListener(v -> {
+            if (!switchik) {
+                showMetricSelectionDialog(1);
+                return true;
+            } else {
+                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+
+        speedView2.setOnLongClickListener(v -> {
+            if (!switchik) {
+                showMetricSelectionDialog(2);
+                return true;
+            } else {
+                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+
+        speedView3.setOnLongClickListener(v -> {
+            if (!switchik) {
+                showMetricSelectionDialog(3);
+                return true;
+            } else {
+                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                return false;
+            }
+        });
+
+
+
 
         //BLUETOOTH 1
         connectionStatus = findViewById(R.id.connection_status);
@@ -126,6 +169,13 @@ public class carDashboard extends AppCompatActivity {
                     updateGaugeAsync(speedView3, gauge3Metric);
 
                 }
+                if(bluetooth.isConnected()){
+                    switch1.setEnabled(true);
+                } else if (!bluetooth.isConnected()) {
+                    switch1.setEnabled(false);
+                    switch1.setChecked(false);
+                }
+
                 handler.postDelayed(this, 50);
             }
         };
@@ -251,12 +301,12 @@ public class carDashboard extends AppCompatActivity {
 
     private void setGaugeUnit(DeluxeSpeedView view, GaugeMetric metric) {
         DatabaseHelper dbHelper = new DatabaseHelper(this);
-        GaugeSetting gaugeSetting = dbHelper.getGaugeSetting(metric.name()); // Get settings from the database
+        GaugeSetting gaugeSetting = dbHelper.getGaugeSetting(metric.name());
 
         if (gaugeSetting != null) {
-            view.setUnit(gaugeSetting.getUnit());  // Set the unit
-            view.setMaxSpeed(gaugeSetting.getMaxSpeed());  // Set the max speed
-            view.setWithTremble(false);  // Disable tremble effect (optional)
+            view.setUnit(gaugeSetting.getUnit());
+            view.setMaxSpeed(gaugeSetting.getMaxSpeed());
+            view.setWithTremble(false);
         }
     }
 
@@ -335,13 +385,18 @@ public class carDashboard extends AppCompatActivity {
         if (bluetooth.isConnected()) {
             connectionStatus.setText("OBD2 Status: Connected");
             connectButton.setText("Disconnect");
+            switch1.setEnabled(true);
+        } else {
+            switch1.setEnabled(false);
         }
     }
+
     @Override
     protected void onPause() {
         super.onPause();
         handler.removeCallbacks(obdPollingRunnable);
         bluetooth.disconnect();
+        switch1.setChecked(false);
     }
 
     @Override
@@ -349,6 +404,7 @@ public class carDashboard extends AppCompatActivity {
         super.onDestroy();
         bluetooth.disconnect();
         handler.removeCallbacksAndMessages(null);
+        switch1.setChecked(false);
         if (dbHelper != null) {
             dbHelper.close();
         }

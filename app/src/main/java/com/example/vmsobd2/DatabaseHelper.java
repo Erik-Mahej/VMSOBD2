@@ -1,6 +1,5 @@
 package com.example.vmsobd2;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -96,17 +95,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public GaugeSetting getGaugeSetting(String metricName) {
         SQLiteDatabase db = this.getReadableDatabase();
-        // Query the database for the gauge setting based on metric name
+
         Cursor cursor = db.query("gauge_settings", new String[]{"metric_name", "unit", "max_speed"},
                 "metric_name = ?", new String[]{metricName}, null, null, null);
 
-        // Check if cursor is not null and contains results
         if (cursor != null && cursor.moveToFirst()) {
-            // Get the index of each column
+
             int unitColumnIndex = cursor.getColumnIndex("unit");
             int maxSpeedColumnIndex = cursor.getColumnIndex("max_speed");
 
-            // Check if both columns exist
             if (unitColumnIndex != -1 && maxSpeedColumnIndex != -1) {
                 String unit = cursor.getString(unitColumnIndex);
                 int maxSpeed = cursor.getInt(maxSpeedColumnIndex);

@@ -103,6 +103,7 @@ public class Bluetooth {
                 bluetoothSocket.connect();
                 inputStream = bluetoothSocket.getInputStream();
                 outputStream = bluetoothSocket.getOutputStream();
+                Thread.sleep(1500);
                 isConnected = true;
 
 
@@ -117,6 +118,8 @@ public class Bluetooth {
                     ((Activity) context).runOnUiThread(() -> connectionStatus.setText("OBD2 Status: Connection Failed"));
                 }
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
         }).start();
     }

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Gravity;
@@ -33,6 +34,10 @@ public class EngineFaults extends AppCompatActivity {
     private Button connectButton;
     private GridLayout gridLayout;
     private DatabaseHelper dbHelper;
+    private Button scanButton;
+    private Handler handler;
+    private Runnable legitcheck;
+
 
 
     @Override
@@ -63,14 +68,39 @@ public class EngineFaults extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
 
         gridLayout = findViewById(R.id.gridLayout);
+        scanButton = findViewById(R.id.btnScan);
+        updateScanButtonState();
 
 
         updateStatus("Connect to Bluetooth to scan");
         checkBluetoothConnection();
 
+        handler = new Handler();
+        legitcheck = new Runnable() {
+            @Override
+            public void run() {
+                updateScanButtonState();
+
+                handler.postDelayed(this, 100);
+            }
+        };
+        handler.post(legitcheck);
+
+
 
     }
 
+    private void updateScanButtonState() {
+        if (bluetooth != null && bluetooth.isConnected()) {
+            scanButton.setEnabled(true);
+            scanButton.setTextColor(Color.WHITE);
+            scanButton.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+        } else {
+            scanButton.setEnabled(false);
+            scanButton.setTextColor(Color.GRAY);
+            scanButton.setBackgroundTintList(getResources().getColorStateList(R.color.gray));
+        }
+    }
 
     private void checkBluetoothConnection() {
         if (bluetooth != null && bluetooth.isConnected()) {
@@ -78,6 +108,7 @@ public class EngineFaults extends AppCompatActivity {
         } else {
             updateStatus("Connect to Bluetooth to scan");
         }
+        updateScanButtonState();
     }
 
     public void goBack(View view) {
@@ -252,6 +283,7 @@ public class EngineFaults extends AppCompatActivity {
             connectionStatus.setText("OBD2 Status: Connected");
             connectButton.setText("Disconnect");
         }
+        updateScanButtonState();
     }
     @Override
     protected void onPause(){
