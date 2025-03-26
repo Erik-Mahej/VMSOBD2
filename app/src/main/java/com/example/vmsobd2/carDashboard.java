@@ -32,6 +32,7 @@ import android.app.AlertDialog;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -290,7 +291,8 @@ public class carDashboard extends AppCompatActivity {
     }
 
     private void showMetricSelectionDialog(int gaugeNumber) {
-        final String[] metrics = {"Engine RPM", "Car Speed", "Torque"};
+        DatabaseHelper dbHelper = new DatabaseHelper(this);
+        final String[] metrics = dbHelper.getAllMetricNamesSortByID().toArray(new String[0]);
         new AlertDialog.Builder(this)
                 .setTitle("Select Metric")
                 .setItems(metrics, (dialog, which) -> {
@@ -378,7 +380,7 @@ public class carDashboard extends AppCompatActivity {
         switch (metric) {
             case RPM: return "Engine RPM";
             case SPEED: return "Car Speed";
-            case ENGINE_REFERENCE_TORQUE: return "Torque";
+            case ENGINE_REFERENCE_TORQUE: return "Torqueee";
             //case FUEL_LEVEL: return "Fuel Level";
             //case AVG_CONSUMPTION: return "Avg Consumption";
             //case CURRENT_CONSUMPTION: return "Current Consumption";
