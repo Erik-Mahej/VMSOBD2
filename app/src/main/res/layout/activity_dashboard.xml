@@ -5,7 +5,6 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
     tools:context=".carDashboard">
 
     <androidx.appcompat.widget.Toolbar
@@ -13,79 +12,85 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@color/black"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:layout_width="300dp"
-        android:layout_height="55dp"
-        android:fontFamily="@font/roboto"
-        android:gravity="center"
-        android:text="Dashboard"
-        android:textColor="@color/white"
-        android:textSize="25sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.007" />
 
     <Button
         android:id="@+id/btnBack"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:layout_marginTop="4dp"
         android:fontFamily="@font/roboto"
         android:onClick="goBack"
         android:text="Back"
         android:textColor="@color/white"
-        android:textColorLink="@color/black"
         android:textSize="20sp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Switch
         android:id="@+id/moreswitch"
-        android:layout_width="45dp"
-        android:layout_height="30dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_marginTop="15dp"
         android:layout_marginEnd="10dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="6dp"
+        android:text="Live Data"
+        android:textColor="@color/white"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/roboto"
+        android:gravity="center"
+        android:text="Dashboard"
+        android:textColor="@color/white"
+        android:textSize="25sp"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
 
     <include
         android:id="@+id/bottom_toolbar"
         layout="@layout/bottom_toolbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintBottom_toTopOf="@id/bottom_toolbar"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintEnd_toEndOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <!-- First gauge -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/gauge1"
-                android:layout_width="300dp"
-                android:layout_height="300dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
-                android:backgroundTint="#f3f3f3"
-                app:cardCornerRadius="15dp"
+                android:theme="@style/Base.Theme.VMSOBD2"
+                app:cardBackgroundColor="@color/cardBackgroundColor"
+                app:cardCornerRadius="50dp"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
@@ -99,44 +104,71 @@
                     <TextView
                         android:id="@+id/textView1"
                         android:layout_width="match_parent"
-                        android:layout_height="20dp"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="Engine RPM"
-                        android:textColor="@color/black" />
+                        android:textColor="@color/textcolor"
+                        android:textSize="25sp" />
 
                     <com.github.anastr.speedviewlib.DeluxeSpeedView
                         android:id="@+id/speedView1"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:sv_indicator="LineIndicator"
+                        app:sv_indicator="NeedleIndicator"
                         app:sv_maxSpeed="6000"
                         app:sv_trembleDegree="10"
                         app:sv_trembleDuration="300"
                         app:sv_unit="RPM"
+                        app:sv_tickRotation="false"
+                        app:sv_withEffects="true"
+                        app:sv_backgroundCircleColor="@color/black"
+                        app:sv_textSize="20sp"
+                        app:sv_marksNumber="0"
+                        app:sv_tickNumber="7"
+                        app:sv_tickPadding="50dp"
+                        app:sv_indicatorLightColor="@color/white"
+                        app:sv_sectionStyle="BUTT"
+                        app:sv_indicatorColor="@color/red"
+                        app:sv_indicatorWidth="25dp"
+                        app:sv_speedometerWidth="15dp"
+                        app:sv_unitTextColor="@color/textcolor"
+                        app:sv_markColor="@color/white"
+                        app:sv_speedBackgroundColor="@color/backgroundColor"
+                        app:sv_speedTextColor="@color/textcolor"
+                        app:sv_speedTextFormat="INTEGER"
+                        app:sv_speedTextPadding="10dp"
+                        app:sv_markWidth="2dp"
+                        app:sv_markStyle="ROUND"
+                        app:sv_speedTextSize="30sp"
+                        app:sv_centerCircleRadius="20dp"
                         app:sv_unitUnderSpeedText="true" />
                 </LinearLayout>
-                <TextView
-
-                    android:id="@+id/moretext"
-                    android:layout_width="match_parent"
-                    android:layout_height="20dp"
-                    android:gravity="center"
-                    android:text="more"
-                    android:textColor="@color/black" />
-
             </androidx.cardview.widget.CardView>
 
-            <!-- Second gauge -->
+            <androidx.constraintlayout.helper.widget.Flow
+                android:id="@+id/gaugeFlow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                app:layout_constraintTop_toBottomOf="@id/gauge1"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:flow_wrapMode="chain"
+                app:flow_horizontalGap="16dp"
+                app:flow_verticalGap="16dp"
+                app:flow_horizontalAlign="center"
+                app:flow_verticalAlign="top"
+                app:flow_maxElementsWrap="2"
+                app:constraint_referenced_ids="gauge2,gauge3" />
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/gauge2"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:layout_margin="15dp"
-                android:backgroundTint="#f3f3f3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:theme="@style/Base.Theme.VMSOBD2"
+                app:cardBackgroundColor="@color/cardBackgroundColor"
                 app:cardCornerRadius="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/gauge1">
+                app:layout_constraintWidth_percent="0.45">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -147,35 +179,55 @@
                     <TextView
                         android:id="@+id/textView2"
                         android:layout_width="match_parent"
-                        android:layout_height="20dp"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="Speed"
-                        android:textColor="@color/black" />
+                        android:textColor="@color/textcolor"
+                        android:textSize="18sp" />
 
                     <com.github.anastr.speedviewlib.DeluxeSpeedView
                         android:id="@+id/speedView2"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:sv_indicator="LineIndicator"
+                        app:sv_indicator="NeedleIndicator"
                         app:sv_maxSpeed="6000"
                         app:sv_trembleDegree="10"
                         app:sv_trembleDuration="300"
                         app:sv_unit="RPM"
+                        app:sv_withEffects="true"
+                        app:sv_tickRotation="false"
+                        app:sv_backgroundCircleColor="@color/black"
+                        app:sv_textSize="10sp"
+                        app:sv_marksNumber="0"
+                        app:sv_tickNumber="3"
+                        app:sv_tickPadding="30dp"
+                        app:sv_indicatorLightColor="@color/white"
+                        app:sv_sectionStyle="BUTT"
+                        app:sv_indicatorColor="@color/red"
+                        app:sv_indicatorWidth="25dp"
+                        app:sv_speedometerWidth="15dp"
+                        app:sv_unitTextColor="@color/textcolor"
+                        app:sv_markColor="@color/white"
+                        app:sv_speedBackgroundColor="@color/backgroundColor"
+                        app:sv_speedTextColor="@color/textcolor"
+                        app:sv_speedTextFormat="INTEGER"
+                        app:sv_speedTextPadding="10dp"
+                        app:sv_markWidth="2dp"
+                        app:sv_markStyle="ROUND"
+                        app:sv_centerCircleRadius="20dp"
                         app:sv_unitUnderSpeedText="true" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Third gauge -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/gauge3"
-                android:layout_width="180dp"
-                android:layout_height="180dp"
-                android:layout_margin="15dp"
-                android:backgroundTint="#f3f3f3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:theme="@style/Base.Theme.VMSOBD2"
+                app:cardBackgroundColor="@color/cardBackgroundColor"
                 app:cardCornerRadius="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/gauge1">
+                app:layout_constraintWidth_percent="0.45">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -186,37 +238,47 @@
                     <TextView
                         android:id="@+id/textView3"
                         android:layout_width="match_parent"
-                        android:layout_height="20dp"
+                        android:layout_height="wrap_content"
                         android:gravity="center"
                         android:text="AVG Consumption"
-                        android:textColor="@color/black" />
+                        android:textColor="@color/textcolor"
+                        android:textSize="18sp" />
 
                     <com.github.anastr.speedviewlib.DeluxeSpeedView
                         android:id="@+id/speedView3"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:sv_indicator="LineIndicator"
+                        app:sv_indicator="NeedleIndicator"
                         app:sv_maxSpeed="6000"
                         app:sv_trembleDegree="10"
                         app:sv_trembleDuration="300"
                         app:sv_unit="RPM"
+                        app:sv_tickRotation="false"
+                        app:sv_withEffects="true"
+                        app:sv_backgroundCircleColor="@color/black"
+                        app:sv_textSize="10sp"
+                        app:sv_marksNumber="0"
+                        app:sv_tickNumber="3"
+                        app:sv_tickPadding="30dp"
+                        app:sv_indicatorLightColor="@color/white"
+                        app:sv_sectionStyle="BUTT"
+                        app:sv_indicatorColor="@color/red"
+                        app:sv_indicatorWidth="25dp"
+                        app:sv_speedometerWidth="15dp"
+                        app:sv_unitTextColor="@color/textcolor"
+                        app:sv_markColor="@color/white"
+                        app:sv_speedBackgroundColor="@color/backgroundColor"
+                        app:sv_speedTextColor="@color/textcolor"
+                        app:sv_speedTextFormat="INTEGER"
+                        app:sv_speedTextPadding="10dp"
+                        app:sv_markWidth="2dp"
+                        app:sv_markStyle="ROUND"
+                        app:sv_centerCircleRadius="20dp"
                         app:sv_unitUnderSpeedText="true" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
-
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="44dp"
-        android:layout_marginEnd="6dp"
-        android:text="Live Data"
-        android:textColor="@color/white"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

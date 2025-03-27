@@ -11,11 +11,6 @@ public class GaugeSetting {
         this.maxSpeed = maxSpeed;
     }
 
-    // Getters
-    public String getMetricName() {
-        return metricName;
-    }
-
     public String getUnit() {
         return unit;
     }

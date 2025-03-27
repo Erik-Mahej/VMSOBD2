@@ -8,9 +8,9 @@
     <color name="gray">#6B6B6B</color>
     <color name="darkgray">#1F1E1E</color>
     <color name="skorowhite">#E0DEDE</color>
-    <color name="cardBackgroundColor">#FFFFFF</color>
-    <color name="backgroundColor">#F5F5F5</color>
-    <color name="textcolor">#000000</color>
+    <color name="cardBackgroundColor">#002C2B2B</color>
+    <color name="backgroundColor">#000000</color>
+    <color name="textcolor">#ffffff</color>
     <color name="gauge_color_light">#6200EE</color>
     <color name="text_color_light">#000000</color>
 

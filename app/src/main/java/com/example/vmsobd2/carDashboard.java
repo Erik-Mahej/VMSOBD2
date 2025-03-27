@@ -77,7 +77,7 @@ public class carDashboard extends AppCompatActivity {
         label1 = findViewById(R.id.textView1);
         label2 = findViewById(R.id.textView2);
         label3 = findViewById(R.id.textView3);
-        moretext=findViewById(R.id.moretext);
+        //moretext=findViewById(R.id.moretext);
 
         switch1 = findViewById(R.id.moreswitch);
         //tento switch ovlada jestli je zapnut presos dat
