@@ -4,7 +4,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -13,7 +12,7 @@ import java.util.ArrayList;
 public class DatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "OBD2CODES.db";
-    private static final int DATABASE_VERSION = 30;
+    private static final int DATABASE_VERSION = 39;
 
     private static final String createTable1 = "CREATE TABLE faultCodes (" +
                                                 "code INTEGER PRIMARY KEY," +
@@ -34,7 +33,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
      */
     private static final String createTable4 ="CREATE TABLE obd_data (" +
             "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+            "label TEXT UNIQUE,"+
             "pid TEXT UNIQUE," +
+            "rpid TEXT UNIQUE," +
             "hex_count INTEGER," +
             "formula TEXT," +
             "metric_name TEXT UNIQUE," +
@@ -62,9 +63,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("INSERT INTO faultCodes (code, description) VALUES (420, 'Fault Code: P0420 - Catalytic converter efficiency below threshold')");
         db.execSQL("INSERT INTO faultCodes (code, description) VALUES (171, 'Fault Code: P0171 - System too lean (Bank 1)')");
 
-        db.execSQL("INSERT INTO obd_data (id,pid, hex_count, formula,metric_name, unit, max_speed) VALUES (1,'410C', 2, '((A * 256) + B) / 4','RPM', 'RPM', 6000)");
-        db.execSQL("INSERT INTO obd_data (id,pid, hex_count, formula,metric_name, unit, max_speed) VALUES (2,'410D', 1, 'A','SPEED', 'km/h', 240)");
-        db.execSQL("INSERT INTO obd_data (id,pid, hex_count, formula,metric_name, unit, max_speed) VALUES (3,'4163', 2, 'A * 256 + B','ENGINE_REFERENCE_TORQUE', 'Nm', 600)");
+        db.execSQL("INSERT INTO obd_data (id,label,pid,rpid, hex_count, formula,metric_name, unit, max_speed) VALUES (1,'Engine RPM','010C','410C', 2, '((A * 256) + B) / 4','RPM', 'RPM', 6000)");
+        db.execSQL("INSERT INTO obd_data (id,label,pid,rpid, hex_count, formula,metric_name, unit, max_speed) VALUES (2,'Vehicle Speed','010D','410D', 1, 'A','SPEED', 'km/h', 240)");
+        db.execSQL("INSERT INTO obd_data (id,label,pid,rpid, hex_count, formula,metric_name, unit, max_speed) VALUES (3,'Torque','0163','4163', 2, 'A * 256 + B','ENGINE_REFERENCE_TORQUE', 'Nm', 600)");
 
         db.execSQL("INSERT INTO pids (pid) VALUES ('410C')");
         db.execSQL("INSERT INTO pids (pid) VALUES ('4163')");
@@ -101,7 +102,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     public ObdFormula getFormulaByPid(String pid) {
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT pid, hex_count, formula FROM obd_data WHERE pid = ?", new String[]{pid});
+        Cursor cursor = db.rawQuery("SELECT rpid, hex_count, formula FROM obd_data WHERE rpid = ?", new String[]{pid});
 
         if (cursor.moveToFirst()) {
             String code = cursor.getString(0);
@@ -145,11 +146,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return pidList;
     }
 
-    public List<String> getAllMetricNamesSortByID() {
+    public List<String> getAllMetricLabelsSortByID() {
         List<String> pidList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
-        Cursor cursor = db.rawQuery("SELECT id,metric_name FROM obd_data ORDER BY id", null);
+        Cursor cursor = db.rawQuery("SELECT id,label FROM obd_data ORDER BY id", null);
 
         if (cursor.moveToFirst()) {
             do {
@@ -161,10 +162,41 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.close();
         return pidList;
     }
+    public String getMetricLabel(String metric_name) {
+        String label = "nicota";
+        SQLiteDatabase db = this.getReadableDatabase();
 
+        Cursor cursor = db.rawQuery("SELECT label FROM obd_data Where metric_name = ?",new String[]{metric_name});
 
+        if (cursor.moveToFirst()) {
+            do {
+                label =cursor.getString(0);
+            } while (cursor.moveToNext());
+            db.close();
+            cursor.close();
+            return label;
+        }else {
+            db.close();
+            return "nic";
+        }
+    }
+    public String getMetricPID(String metric_name) {
+        String PIDs = "";
+        SQLiteDatabase db = this.getReadableDatabase();
 
+        Cursor cursor = db.rawQuery("SELECT pid FROM obd_data Where metric_name = ?",new String[]{metric_name});
 
-
+        if (cursor.moveToFirst()) {
+            do {
+                PIDs =cursor.getString(0);
+            } while (cursor.moveToNext());
+            db.close();
+            cursor.close();
+            return PIDs;
+        }else {
+            db.close();
+            return "";
+        }
+    }
 
 }

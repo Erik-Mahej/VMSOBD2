@@ -50,11 +50,12 @@ public class carDashboard extends AppCompatActivity {
     private Handler handler;
     private Switch switch1;
     private Runnable obdPollingRunnable;
-    private boolean switchik = false;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private DatabaseHelper dbHelper;
 
     private final Map<DeluxeSpeedView, ValueAnimator> gaugeAnimators = new HashMap<>();
+    private boolean isPollingActive = false;
+
 
     private GaugeMetric gauge1Metric = GaugeMetric.RPM;
     private GaugeMetric gauge2Metric = GaugeMetric.SPEED;
@@ -80,21 +81,27 @@ public class carDashboard extends AppCompatActivity {
 
         switch1 = findViewById(R.id.moreswitch);
         //tento switch ovlada jestli je zapnut presos dat
-        switch1.setEnabled(false);
 
         switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!bluetooth.isConnected() && isChecked) {
-                switch1.setChecked(false);
-                Toast.makeText(carDashboard.this, "Bluetooth must be connected!", Toast.LENGTH_SHORT).show();
+            if (bluetooth.isConnected()) {
+                isPollingActive = isChecked;
+                if (isChecked) {
+                    handler.post(obdPollingRunnable);
+                    Toast.makeText(carDashboard.this, "Live Data ON", Toast.LENGTH_SHORT).show();
+                } else {
+                    handler.removeCallbacks(obdPollingRunnable);
+                    Toast.makeText(carDashboard.this, "Live Data OFF", Toast.LENGTH_SHORT).show();
+                }
             } else {
-                switchik = isChecked;
-                String message = isChecked ? "Live Data ON" : "Live Data OFF";
-                Toast.makeText(carDashboard.this, message, Toast.LENGTH_SHORT).show();
+                switch1.setChecked(false);
+                isPollingActive = false;
+                Toast.makeText(carDashboard.this, "Bluetooth must be connected!", Toast.LENGTH_SHORT).show();
             }
         });
 
+
         speedView1.setOnLongClickListener(v -> {
-            if (!switchik) {
+            if (!switch1.isChecked()) {
                 showMetricSelectionDialog(1);
                 return true;
             } else {
@@ -104,7 +111,7 @@ public class carDashboard extends AppCompatActivity {
         });
 
         speedView2.setOnLongClickListener(v -> {
-            if (!switchik) {
+            if (!switch1.isChecked()) {
                 showMetricSelectionDialog(2);
                 return true;
             } else {
@@ -114,7 +121,7 @@ public class carDashboard extends AppCompatActivity {
         });
 
         speedView3.setOnLongClickListener(v -> {
-            if (!switchik) {
+            if (!switch1.isChecked()) {
                 showMetricSelectionDialog(3);
                 return true;
             } else {
@@ -122,7 +129,6 @@ public class carDashboard extends AppCompatActivity {
                 return false;
             }
         });
-
 
 
 
@@ -163,30 +169,20 @@ public class carDashboard extends AppCompatActivity {
         obdPollingRunnable = new Runnable() {
             @Override
             public void run() {
-                if (bluetooth.isConnected()) {
-                    if (switchik) {
-                        updateGaugeAsync(speedView1, gauge1Metric);
-                        updateGaugeAsync(speedView2, gauge2Metric);
-                        updateGaugeAsync(speedView3, gauge3Metric);
-                    } else {
-                        runOnUiThread(() -> {
-                            resetGauges();
-                        });
-                    }
-                    switch1.setEnabled(true);
-                } else {
-                    switch1.setEnabled(false);
-                    switch1.setChecked(false);
+                if (!bluetooth.isConnected() || !isPollingActive) {
                     runOnUiThread(() -> resetGauges());
+                    return;
                 }
 
-                handler.postDelayed(this, 50);
+                updateGaugeAsync(speedView1, gauge1Metric);
+                updateGaugeAsync(speedView2, gauge2Metric);
+                updateGaugeAsync(speedView3, gauge3Metric);
+
+                if (isPollingActive) {
+                    handler.postDelayed(this, 300);
+                }
             }
         };
-
-
-
-        handler.post(obdPollingRunnable);
     }
 
     private void resetGauges() {
@@ -200,7 +196,22 @@ public class carDashboard extends AppCompatActivity {
         String response;
         float value = -1;
         String formula;
-
+        String request =dbHelper.getMetricPID(metric.name());
+        response = bluetooth.sendObdCommand(request);
+        formula = parseResponse(response, dbHelper);
+        if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
+            Log.e("FormulaError", "Invalid formula for "+ metric.name() + " " + formula);
+            return value;
+        }
+        try {
+            Expression expression = new Expression(formula);
+            BigDecimal result = expression.eval();
+            value = result.floatValue();
+            Log.d("OBD", "VALUE "+metric.name()+" " + value);
+        } catch (Expression.ExpressionException e) {
+            Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
+        }
+        /*
         switch (metric) {
             case RPM:
                 response = bluetooth.sendObdCommand("010C");
@@ -256,7 +267,7 @@ public class carDashboard extends AppCompatActivity {
 
 
                 break;
-                /*
+
             case AVG_CONSUMPTION:
 
                 response = bluetooth.sendObdCommand("015F");
@@ -285,14 +296,16 @@ public class carDashboard extends AppCompatActivity {
 
 
                 break;
-                */
+
         }
+        return value;
+    */
         return value;
     }
 
     private void showMetricSelectionDialog(int gaugeNumber) {
         DatabaseHelper dbHelper = new DatabaseHelper(this);
-        final String[] metrics = dbHelper.getAllMetricNamesSortByID().toArray(new String[0]);
+        final String[] metrics = dbHelper.getAllMetricLabelsSortByID().toArray(new String[0]);
         new AlertDialog.Builder(this)
                 .setTitle("Select Metric")
                 .setItems(metrics, (dialog, which) -> {
@@ -333,9 +346,9 @@ public class carDashboard extends AppCompatActivity {
             double value = getMetricValue(metric);
             if (value >= 0) {
                 float valueFloat = (float) value;
-
+                Log.d("OBD", "Float Value "+metric.name()+" " + valueFloat);
                 runOnUiThread(() -> {
-                    if (switchik) {
+                    if (switch1.isChecked()) {
                         animateGauge(view, (int) valueFloat);
                     }
                 });
@@ -346,7 +359,7 @@ public class carDashboard extends AppCompatActivity {
     private void animateGauge(DeluxeSpeedView view, int targetValue) {
         ValueAnimator existingAnimator = gaugeAnimators.get(view);
         if (existingAnimator != null && existingAnimator.isRunning()) {
-            existingAnimator.cancel(); // Prevent animation stacking
+            existingAnimator.cancel();
         }
 
         float currentValue = view.getSpeed();
@@ -377,15 +390,8 @@ public class carDashboard extends AppCompatActivity {
     }
 
     private String getMetricLabel(GaugeMetric metric) {
-        switch (metric) {
-            case RPM: return "Engine RPM";
-            case SPEED: return "Car Speed";
-            case ENGINE_REFERENCE_TORQUE: return "Torqueee";
-            //case FUEL_LEVEL: return "Fuel Level";
-            //case AVG_CONSUMPTION: return "Avg Consumption";
-            //case CURRENT_CONSUMPTION: return "Current Consumption";
-            default: return "Unknown";
-        }
+        DatabaseHelper dbHelper = new DatabaseHelper(this);
+        return dbHelper.getMetricLabel(metric.name());
     }
 
      public String parseResponse(String response, DatabaseHelper dbHelper) {
@@ -450,39 +456,45 @@ public class carDashboard extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         bluetooth.handlePermissionsResult(requestCode, permissions, grantResults);
     }
-
+        /*
     @Override
     protected void onResume() {
         super.onResume();
         if (bluetooth.isConnected()) {
             connectionStatus.setText("OBD2 Status: Connected");
             connectButton.setText("Disconnect");
-            switch1.setEnabled(true);
+            switch1.setChecked(true);
         } else {
-            switch1.setEnabled(false);
+            switch1.setChecked(false);
         }
     }
+
+         */
 
     @Override
     protected void onPause() {
         super.onPause();
+        isPollingActive = false;
         handler.removeCallbacks(obdPollingRunnable);
         bluetooth.disconnect();
         switch1.setChecked(false);
     }
 
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        bluetooth.disconnect();
+        isPollingActive = false;
         handler.removeCallbacksAndMessages(null);
+        bluetooth.disconnect();
         switch1.setChecked(false);
-        if (dbHelper != null) {
-            dbHelper.close();
-        }
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();
         }
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
     }
+
 
 }
