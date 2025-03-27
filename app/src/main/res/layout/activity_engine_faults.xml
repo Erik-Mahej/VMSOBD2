@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
     tools:context=".EngineFaults">
 
     <androidx.appcompat.widget.Toolbar
@@ -14,119 +14,106 @@
         android:layout_height="wrap_content"
         android:background="@color/black"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-
-        />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
-        android:layout_width="300dp"
-        android:layout_height="55dp"
+        android:id="@+id/titleText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:fontFamily="@font/roboto"
         android:gravity="center"
         android:text="Faults"
         android:textColor="@color/white"
-        android:textSize="25sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.495"
+        android:textSize="24sp"
+        app:layout_constraintTop_toTopOf="@id/toolbar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.007" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/toolbar"
+        android:layout_marginTop="8dp" />
 
     <Button
         android:id="@+id/btnBack"
-        android:layout_width="110dp"
-        android:layout_height="55dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="4dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:fontFamily="@font/roboto"
         android:onClick="goBack"
         android:text="Back"
         android:textColor="@color/white"
-        android:textColorLink="@color/black"
-        android:textSize="20sp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:textSize="18sp"
+        android:backgroundTint="@color/black"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <include
-        android:id="@+id/bottom_toolbar"
-        layout="@layout/bottom_toolbar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_margin="12dp" />
 
     <ScrollView
         android:id="@+id/ScrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="15dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
         app:layout_constraintBottom_toTopOf="@id/btnScan"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="8dp">
 
-        <GridLayout
-            android:id="@+id/gridLayout"
+        <LinearLayout
+            android:id="@+id/linearLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="1"
-            android:rowCount="4">
-
-
+            android:orientation="vertical"
+            android:padding="8dp">
 
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_rowWeight="1"
-                android:layout_columnWeight="1"
-                android:layout_margin="15dp"
-                android:backgroundTint="#f3f3f3"
-                app:cardCornerRadius="15dp">
+                android:layout_height="wrap_content"
+                android:layout_margin="8dp"
+                android:backgroundTint="@color/cardBackgroundColor"
+                app:cardCornerRadius="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:gravity="center_horizontal">
 
                     <TextView
                         android:id="@+id/status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginBottom="10dp"
                         android:text="Your Fault Codes:"
-                        android:textColor="#0D0D0D"
+                        android:textColor="@color/textcolor"
                         android:textSize="18sp"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@id/chooseDeviceButton"
-                        app:layout_constraintVertical_bias="0.6" />
+                        android:fontFamily="@font/roboto" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-
-        </GridLayout>
+        </LinearLayout>
     </ScrollView>
 
     <Button
         android:id="@+id/btnScan"
-        android:layout_width="wrap_content"
+        android:visibility="invisible"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="144dp"
-        android:layout_marginEnd="145dp"
-        android:layout_marginBottom="15dp"
-        android:onClick="run"
-        android:textColor="@color/gray"
         android:text="Scan Faults"
-        android:backgroundTint="@color/black"
+        android:textColor="@color/textcolor2"
+        android:backgroundTint="@color/textcolor"
         android:enabled="false"
+        android:onClick="run"
         app:layout_constraintBottom_toTopOf="@id/bottom_toolbar"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginBottom="12dp" />
 
+    <include
+        android:id="@+id/bottom_toolbar"
+        layout="@layout/bottom_toolbar"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

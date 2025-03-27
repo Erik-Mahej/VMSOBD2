@@ -11,6 +11,7 @@
     <color name="cardBackgroundColor">#002C2B2B</color>
     <color name="backgroundColor">#000000</color>
     <color name="textcolor">#ffffff</color>
+    <color name="textcolor2">#000000</color>
     <color name="gauge_color_light">#6200EE</color>
     <color name="text_color_light">#000000</color>
 

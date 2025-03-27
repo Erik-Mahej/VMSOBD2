@@ -32,7 +32,7 @@ public class EngineFaults extends AppCompatActivity {
     private TextView connectionStatus;
     private TextView statusText;
     private Button connectButton;
-    private GridLayout gridLayout;
+    private LinearLayout linearLayout;
     private DatabaseHelper dbHelper;
     private Button scanButton;
     private Handler handler;
@@ -67,14 +67,13 @@ public class EngineFaults extends AppCompatActivity {
 
         dbHelper = new DatabaseHelper(this);
 
-        gridLayout = findViewById(R.id.gridLayout);
+        linearLayout = findViewById(R.id.linearLayout);
         scanButton = findViewById(R.id.btnScan);
         updateScanButtonState();
 
 
         updateStatus("Connect to Bluetooth to scan");
         checkBluetoothConnection();
-
         handler = new Handler();
         legitcheck = new Runnable() {
             @Override
@@ -93,12 +92,9 @@ public class EngineFaults extends AppCompatActivity {
     private void updateScanButtonState() {
         if (bluetooth != null && bluetooth.isConnected()) {
             scanButton.setEnabled(true);
-            scanButton.setTextColor(Color.WHITE);
-            scanButton.setBackgroundTintList(getResources().getColorStateList(R.color.white));
+            scanButton.setVisibility(View.VISIBLE);
         } else {
             scanButton.setEnabled(false);
-            scanButton.setTextColor(Color.GRAY);
-            scanButton.setBackgroundTintList(getResources().getColorStateList(R.color.gray));
         }
     }
 
@@ -124,9 +120,9 @@ public class EngineFaults extends AppCompatActivity {
             try {
                 if (bluetooth != null && bluetooth.isConnected()) {
                     runOnUiThread(() -> {
-                        int cardviewCount = gridLayout.getChildCount();
+                        int cardviewCount = linearLayout.getChildCount();
                         if (cardviewCount > 1) {
-                            gridLayout.removeViews(1, cardviewCount - 1);
+                            linearLayout.removeViews(1, cardviewCount - 1);
                         }
                         updateStatus("Scanning...");
                     });
@@ -267,7 +263,7 @@ public class EngineFaults extends AppCompatActivity {
 
         cardView.addView(innerLayout);
 
-        gridLayout.addView(cardView);
+        linearLayout.addView(cardView);
     }
 
     @Override

@@ -152,7 +152,7 @@ public class AppSettings extends AppCompatActivity {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String deviceName = preferences.getString("selected_device_name", "No device chosen");
         String deviceAddress = preferences.getString("selected_device_address", "");
-        chosenDeviceTextView.setText("Chosen Device: " + deviceName + " (" + deviceAddress + ")");
+        chosenDeviceTextView.setText("Chosen Device: " + deviceName);
     }
 
     @Override
