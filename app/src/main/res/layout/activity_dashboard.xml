@@ -24,7 +24,7 @@
         android:layout_marginTop="4dp"
         android:fontFamily="@font/roboto"
         android:onClick="goBack"
-        android:text="Back"
+        android:text="@string/back"
         android:textColor="@color/white"
         android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -45,7 +45,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="44dp"
         android:layout_marginEnd="6dp"
-        android:text="Live Data"
+        android:text="@string/live_data"
         android:textColor="@color/white"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -56,7 +56,7 @@
         android:layout_height="wrap_content"
         android:fontFamily="@font/roboto"
         android:gravity="center"
-        android:text="Dashboard"
+        android:text="@string/dashboard_title"
         android:textColor="@color/white"
         android:textSize="25sp"
         app:layout_constraintTop_toTopOf="@id/toolbar"
@@ -108,7 +108,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:text="Engine RPM"
+                        android:text="@string/rpm"
                         android:textColor="@color/textcolor"
                         android:textSize="25sp" />
 
@@ -186,7 +186,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:text="Speed"
+                        android:text="@string/speed"
                         android:textColor="@color/textcolor"
                         android:textSize="18sp" />
 
@@ -245,7 +245,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:text="AVG Consumption"
+                        android:text="@string/torque"
                         android:textColor="@color/textcolor"
                         android:textSize="18sp" />
 

@@ -22,7 +22,7 @@
         android:id="@+id/titleText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Obd2 Scanner"
+        android:text="@string/main_menu_title"
         android:textSize="25sp"
         android:fontFamily="@font/roboto"
         android:textColor="@color/white"
@@ -81,7 +81,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Dashboard"
+                android:text="@string/dashboard_title"
                 android:textSize="16sp"
                 android:paddingTop="8dp"
                 android:fontFamily="@font/roboto"
@@ -119,7 +119,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Statistics"
+                android:text="@string/statistics_title"
                 android:textSize="16sp"
                 android:paddingTop="8dp"
                 android:fontFamily="@font/roboto"
@@ -157,7 +157,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Engine Faults"
+                android:text="@string/engine_faults_title"
                 android:textSize="16sp"
                 android:paddingTop="8dp"
                 android:fontFamily="@font/roboto"
@@ -195,7 +195,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Settings"
+                android:text="@string/settings_title"
                 android:textSize="16sp"
                 android:paddingTop="8dp"
                 android:fontFamily="@font/roboto"

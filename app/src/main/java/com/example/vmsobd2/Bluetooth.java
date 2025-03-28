@@ -1,5 +1,7 @@
 package com.example.vmsobd2;
 
+import static android.provider.Settings.System.getString;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
@@ -75,13 +77,13 @@ public class Bluetooth {
 
                     }
                 } else {
-                    connectionStatus.setText("OBD2 Status: No Device Selected");
-                    Toast.makeText(context, "No device selected. Please select a device in the settings.", Toast.LENGTH_LONG).show();
+                    connectionStatus.setText( context.getString(R.string.bt_nodevice));
+                    Toast.makeText(context, context.getString(R.string.toast_nodevice), Toast.LENGTH_LONG).show();
                 }
             } else {
                 // Permission denied
-                connectionStatus.setText("OBD2 Status: Permission Denied");
-                Toast.makeText(context, "Bluetooth permission denied. Allow it in the application settings.", Toast.LENGTH_LONG).show();
+                connectionStatus.setText(context.getString(R.string.bt_denied));
+                Toast.makeText(context, context.getString(R.string.allow_in_settings), Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -97,7 +99,7 @@ public class Bluetooth {
 
         new Thread(() -> {
             try {
-                ((Activity) context).runOnUiThread(() -> connectionStatus.setText("OBD2 Status: Connecting..."));
+                ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conntg)));
                 BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
                 bluetoothSocket = device.createRfcommSocketToServiceRecord(OBD2_UUID);
                 bluetoothSocket.connect();
@@ -108,14 +110,14 @@ public class Bluetooth {
 
 
                 if (connectionStatus != null) {
-                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText("OBD2 Status: Connected"));
+                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conn)));
                 }
 
                 initELM327(); //inicializace ELM327 komunikace
             } catch (IOException e) {
                 isConnected = false;
                 if (connectionStatus != null) {
-                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText("OBD2 Status: Connection Failed"));
+                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conn_fail)));
                 }
                 e.printStackTrace();
             } catch (InterruptedException e) {
@@ -129,7 +131,7 @@ public class Bluetooth {
     public void disconnect() {
         new Thread(() -> {
             if (connectionStatus != null) {
-                connectionStatus.setText("OBD2 Status: Disconnecting...");
+                connectionStatus.setText(context.getString(R.string.bt_disconntg));
             }
             try {
                 if (bluetoothSocket != null) {
@@ -137,7 +139,7 @@ public class Bluetooth {
                 }
                 isConnected = false;
                 if (connectionStatus != null) {
-                    connectionStatus.setText("OBD2 Status: Disconnected");
+                    connectionStatus.setText(context.getString(R.string.bt_disconn));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -155,12 +157,12 @@ public class Bluetooth {
         connectButton.setOnClickListener(view -> {
             if (!isConnected()) {
                 connect(deviceAddress);
-                connectButton.setText("Disconnect");
-                connectionStatus.setText("OBD2 Status: Connected");
+                connectButton.setText(context.getString(R.string.disconnect));
+                connectionStatus.setText(context.getString(R.string.bt_conn));
             } else {
                 disconnect();
-                connectButton.setText("Connect");
-                connectionStatus.setText("OBD2 Status: Disconnected");
+                connectButton.setText(context.getString(R.string.connect));
+                connectionStatus.setText(context.getString(R.string.bt_disconn));
             }
         });
     }

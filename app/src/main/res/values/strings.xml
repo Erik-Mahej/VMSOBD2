@@ -1,3 +1,39 @@
 <resources>
     <string name="app_name">VMSOBD2</string>
+    <string name="main_menu_title">VMS OBD2 Scanner</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="statistics_title">Statistics</string>
+    <string name="engine_faults_title">Engine Faults</string>
+    <string name="settings_title">Settings</string>
+    <string name="live_data">Live Data</string>
+    <string name="rpm">Engine RPM</string>
+    <string name="speed">Speed</string>
+    <string name="torque">Torque</string>
+    <string name="back">Back</string>
+    <string name="your_fault_codes">Your Fault Codes:</string>
+    <string name="scan_faults">Scan Faults</string>
+    <string name="no_device_chosen">No device chosen</string>
+    <string name="choose_bt_device">Choose Bluetooth Device</string>
+    <string name="car_vin">Car VIN:</string>
+    <string name="car_make_year">Car Make Year:</string>
+    <string name="car_mileage">Car Mileage:</string>
+    <string name="bt_nodevice">OBD2 Status: No Device Selected</string>
+    <string name="toast_nodevice">No device selected. Please select a device in the settings.</string>
+    <string name="bt_denied">OBD2 Status: Permission Denied</string>
+    <string name="allow_in_settings">Bluetooth permission denied. Allow it in the application settings.</string>
+    <string name="bt_disconn">OBD2 Status: Disconnected</string>
+    <string name="bt_disconntg">OBD2 Status: Disconnecting...</string>
+    <string name="bt_conn">OBD2 Status: Connected</string>
+    <string name="bt_conntg">OBD2 Status: Connecting...</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="connect">Connect</string>
+    <string name="bt_conn_fail">OBD2 Status: Connection Failed</string>
+
+
+
+
+
+
+
+
 </resources>
