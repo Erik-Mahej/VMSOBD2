@@ -4,6 +4,7 @@
     <string name="dashboard_title">Dashboard</string>
     <string name="statistics_title">Statistics</string>
     <string name="engine_faults_title">Engine Faults</string>
+    <string name="engine_faults_title2">Faults</string>
     <string name="settings_title">Settings</string>
     <string name="live_data">Live Data</string>
     <string name="rpm">Engine RPM</string>
@@ -15,8 +16,9 @@
     <string name="no_device_chosen">No device chosen</string>
     <string name="choose_bt_device">Choose Bluetooth Device</string>
     <string name="car_vin">Car VIN:</string>
-    <string name="car_make_year">Car Make Year:</string>
-    <string name="car_mileage">Car Mileage:</string>
+    <string name="car_vin1">Car VIN: Connect Bluetooth device to view VIN</string>
+    <string name="car_make_year">Car Make Year: </string>
+    <string name="car_mileage">Car Mileage: </string>
     <string name="bt_nodevice">OBD2 Status: No Device Selected</string>
     <string name="toast_nodevice">No device selected. Please select a device in the settings.</string>
     <string name="bt_denied">OBD2 Status: Permission Denied</string>
@@ -28,11 +30,28 @@
     <string name="disconnect">Disconnect</string>
     <string name="connect">Connect</string>
     <string name="bt_conn_fail">OBD2 Status: Connection Failed</string>
-
-
-
-
-
+    <string name="ch_bt_device">Choose Bluetooth Device</string>
+    <string name="seleted_device">Selected device</string>
+    <string name="device_saved">Device Saved</string>
+    <string name="chosen_device">Chosen Device</string>
+    <string name="change_metric">Hold gauge to change showed metric.</string>
+    <string name="data_on">Live Data ON</string>
+    <string name="data_off">Live Data OFF</string>
+    <string name="bt_must_b_conn">Bluetooth must be connected!</string>
+    <string name="data_on_cant">Live Data is ON. Cannot change gauges.</string>
+    <string name="select_metric">Select Metric</string>
+    <string name="vin_btnot">Car VIN: Bluetooth Not Connected</string>
+    <string name="vin_not">Car VIN: Not Available</string>
+    <string name="conn_bt_scan">Connect to Bluetooth to scan</string>
+    <string name="scan_ready">Ready to scan</string>
+    <string name="scanning">Scanning...</string>
+    <string name="found">Found </string>
+    <string name="faults"> faults</string>
+    <string name="noresponse">No response for code </string>
+    <string name="faults_bt_not">Bluetooth is not connected. Please connect your OBD2 device.</string>
+    <string name="scan_error">Scanning error occurred. Please try again.</string>
+    <string name="scan_failed">Scanning failed</string>
+    <string name="scan_complete">Scanning failed</string>
 
 
 

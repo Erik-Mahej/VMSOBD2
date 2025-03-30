@@ -14,6 +14,7 @@ import android.view.View;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -30,14 +31,14 @@ public class EngineFaults extends AppCompatActivity {
 
     private Bluetooth bluetooth;
     private TextView connectionStatus;
-    private TextView statusText;
     private Button connectButton;
+    private TextView statusText;
     private LinearLayout linearLayout;
     private DatabaseHelper dbHelper;
     private Button scanButton;
     private Handler handler;
     private Runnable legitcheck;
-
+    private boolean isScanning = false;
 
 
     @Override
@@ -57,11 +58,16 @@ public class EngineFaults extends AppCompatActivity {
         connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
 
-        bluetooth = new Bluetooth(this, connectionStatus);
+        bluetooth = Bluetooth.getInstance(getApplicationContext());
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String deviceAddress = preferences.getString("selected_device_address", "");
-        bluetooth.handleConnectButton(connectButton, deviceAddress);
+        bluetooth.handleConnectButton(connectButton, connectionStatus,deviceAddress);
+
+        if (bluetooth.isConnected()) {
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }
+
         //BLUETOOTH 2
 
 
@@ -72,7 +78,7 @@ public class EngineFaults extends AppCompatActivity {
         updateScanButtonState();
 
 
-        updateStatus("Connect to Bluetooth to scan");
+        updateStatus(getString(R.string.conn_bt_scan));
         checkBluetoothConnection();
         handler = new Handler();
         legitcheck = new Runnable() {
@@ -80,7 +86,7 @@ public class EngineFaults extends AppCompatActivity {
             public void run() {
                 updateScanButtonState();
 
-                handler.postDelayed(this, 100);
+                handler.postDelayed(this, 300);
             }
         };
         handler.post(legitcheck);
@@ -100,9 +106,9 @@ public class EngineFaults extends AppCompatActivity {
 
     private void checkBluetoothConnection() {
         if (bluetooth != null && bluetooth.isConnected()) {
-            updateStatus("Ready to scan");
+            updateStatus(getString(R.string.scan_ready));
         } else {
-            updateStatus("Connect to Bluetooth to scan");
+            updateStatus(getString(R.string.conn_bt_scan));
         }
         updateScanButtonState();
     }
@@ -116,22 +122,31 @@ public class EngineFaults extends AppCompatActivity {
     }
 
     public void run(View view) {
+        if (isScanning) {
+            //ignorovani opakovaneho mackani scan tlacitka
+            return;
+        }
+
+        isScanning = true; //bool na status scanovani
+        scanButton.setEnabled(false); //vypnuti tlacitka pri scanu
+
         new Thread(() -> {
             try {
                 if (bluetooth != null && bluetooth.isConnected()) {
                     runOnUiThread(() -> {
-                        int cardviewCount = linearLayout.getChildCount();
-                        if (cardviewCount > 1) {
-                            linearLayout.removeViews(1, cardviewCount - 1);
+                        //odstraneni predeslych kodu
+                        int childCount = linearLayout.getChildCount();
+                        if (childCount > 1) {
+                            linearLayout.removeViews(1, childCount - 1);
                         }
-                        updateStatus("Scanning...");
+                        updateStatus(getString(R.string.scanning));
                     });
 
                     Thread.sleep(1000);
 
                     int count = requestNumberOfEngineFaults();
 
-                    runOnUiThread(() -> updateStatus("Found " + count + " faults"));
+                    runOnUiThread(() -> updateStatus(getString(R.string.found) + " " + count + " " + getString(R.string.faults)));
 
                     int f = 301;
 
@@ -144,31 +159,38 @@ public class EngineFaults extends AppCompatActivity {
 
                         if (response != null && !response.isEmpty()) {
                             int decodedResponse = decodeResponse(response);
-
                             String faultDescription = assignFault(decodedResponse);
 
                             runOnUiThread(() -> {
                                 addCardView(faultDescription);
                             });
                         } else {
-                            String faultDescription = "No response for code " + reqFault;
+                            String faultDescription = getString(R.string.noresponse) + reqFault;
                             runOnUiThread(() -> addCardView(faultDescription));
                         }
 
                         f++;
                         Thread.sleep(2000);
                     }
-                    runOnUiThread(() -> updateStatus("Scanning completed"));
                 } else {
                     runOnUiThread(() -> {
-                        updateStatus("Connect to Bluetooth to scan");
-                        Toast.makeText(this, "Bluetooth is not connected. Please connect your OBD2 device.", Toast.LENGTH_SHORT).show();
+                        updateStatus(getString(R.string.conn_bt_scan));
+                        Toast.makeText(this, getString(R.string.faults_bt_not), Toast.LENGTH_SHORT).show();
                     });
                 }
             } catch (Exception e) {
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "An error occurred. Please try again.", Toast.LENGTH_SHORT).show();
-                    updateStatus("Scanning failed");
+                    Toast.makeText(this, getString(R.string.scan_error), Toast.LENGTH_SHORT).show();
+                    updateStatus(getString(R.string.scan_failed));
+                    Log.e("EngineFaults", "Scanning error", e);
+                });
+            } finally {
+                runOnUiThread(() -> {
+                    updateStatus(getString(R.string.scan_complete));
+                    isScanning = false; // reset stavu scanovani
+                    if (bluetooth != null && bluetooth.isConnected()) {
+                        scanButton.setEnabled(true); // az se doscanuje tak se opet zpristupni tlacitko
+                    }
                 });
             }
         }).start();
@@ -231,38 +253,47 @@ public class EngineFaults extends AppCompatActivity {
         }
     }
     private void addCardView(String text) {
+        // vytvoreni objektu cardview
         CardView cardView = new CardView(this);
-        GridLayout.LayoutParams cardLayoutParams = new GridLayout.LayoutParams();
+
+        // nastavovani vlastnosti linearlayoutu
+        LinearLayout.LayoutParams cardLayoutParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
         cardLayoutParams.setMargins(15, 15, 15, 15);
-        cardLayoutParams.width = GridLayout.LayoutParams.MATCH_PARENT;
-        cardLayoutParams.height = GridLayout.LayoutParams.MATCH_PARENT;
-        cardLayoutParams.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
-        cardLayoutParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f);
         cardView.setLayoutParams(cardLayoutParams);
-        cardView.setCardBackgroundColor(Color.parseColor("#f3f3f3"));
+
+        // nastaveni vlastnosti cardview
+        cardView.setCardBackgroundColor(ContextCompat.getColor(this, R.color.cardBackgroundColor));
         cardView.setCardElevation(4);
         cardView.setRadius(15);
+        cardView.setContentPadding(16, 16, 16, 16);
 
+        // vytvoreni vnitrniho linearlayoutu
         LinearLayout innerLayout = new LinearLayout(this);
         innerLayout.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT));
-        innerLayout.setGravity(Gravity.CENTER);
+                LinearLayout.LayoutParams.WRAP_CONTENT));
         innerLayout.setOrientation(LinearLayout.VERTICAL);
+        innerLayout.setGravity(Gravity.CENTER_VERTICAL);
 
+        // vytvoreni textview pro zobrazeni kodu
         TextView textView = new TextView(this);
         textView.setText(text);
-        textView.setTextColor(Color.parseColor("#0D0D0D"));
+        textView.setTextColor(ContextCompat.getColor(this, R.color.textcolor));
         textView.setTextSize(18);
         textView.setLayoutParams(new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT));
         textView.setPadding(0, 10, 0, 10);
 
+        // pridani textview
         innerLayout.addView(textView);
 
+        // pridani vnitrniho layoutu do cardview
         cardView.addView(innerLayout);
 
+        // finalni pridani cardview do linear layoutu na obrazovce
         linearLayout.addView(cardView);
     }
 
@@ -276,20 +307,46 @@ public class EngineFaults extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (bluetooth.isConnected()) {
-            connectionStatus.setText("OBD2 Status: Connected");
-            connectButton.setText("Disconnect");
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }else{
+            bluetooth.updateStatusView('d', connectButton, connectionStatus);
+        }
+        // kontrola bt
+        if (handler != null && legitcheck != null) {
+            handler.post(legitcheck);
         }
         updateScanButtonState();
     }
+
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
-        bluetooth.disconnect();
+        // vypnuti handleru at nebezi na pozadi
+        if (handler != null && legitcheck != null) {
+            handler.removeCallbacks(legitcheck);
+        }
+
+        // Stop any ongoing scan
+        isScanning = false;
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        bluetooth.disconnect();
+
+        // finalni ukonceni handleru
+        if (handler != null) {
+            if (legitcheck != null) {
+                handler.removeCallbacks(legitcheck);
+            }
+            handler = null;
+        }
+        legitcheck = null;
+
+        // zavreni pripojeni k db
+        if (dbHelper != null) {
+            dbHelper.close();
+            dbHelper = null;
+        }
     }
 }

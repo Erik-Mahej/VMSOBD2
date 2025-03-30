@@ -43,9 +43,13 @@ import java.util.regex.Pattern;
 
 public class carDashboard extends AppCompatActivity {
     private Bluetooth bluetooth;
-    private TextView connectionStatus,label1, label2, label3,moretext;
-
+    private TextView connectionStatus;
     private Button connectButton;
+    private TextView label1;
+    private TextView label2;
+    private TextView label3;
+    private TextView moretext;
+
     private DeluxeSpeedView speedView1, speedView2, speedView3;
     private Handler handler;
     private Switch switch1;
@@ -67,8 +71,8 @@ public class carDashboard extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_dashboard);
-
-        Toast.makeText(carDashboard.this, "Hold gauge to change showed metric.", Toast.LENGTH_SHORT).show();
+        //info o ovladani
+        Toast.makeText(carDashboard.this, getString(R.string.change_metric), Toast.LENGTH_SHORT).show();
 
         //Deklarace
         speedView1 = findViewById(R.id.speedView1);
@@ -87,15 +91,15 @@ public class carDashboard extends AppCompatActivity {
                 isPollingActive = isChecked;
                 if (isChecked) {
                     handler.post(obdPollingRunnable);
-                    Toast.makeText(carDashboard.this, "Live Data ON", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(carDashboard.this, getString(R.string.data_on), Toast.LENGTH_SHORT).show();
                 } else {
                     handler.removeCallbacks(obdPollingRunnable);
-                    Toast.makeText(carDashboard.this, "Live Data OFF", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(carDashboard.this, getString(R.string.data_off), Toast.LENGTH_SHORT).show();
                 }
             } else {
                 switch1.setChecked(false);
                 isPollingActive = false;
-                Toast.makeText(carDashboard.this, "Bluetooth must be connected!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(carDashboard.this, getString(R.string.bt_must_b_conn), Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -105,7 +109,7 @@ public class carDashboard extends AppCompatActivity {
                 showMetricSelectionDialog(1);
                 return true;
             } else {
-                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(carDashboard.this, getString(R.string.data_on_cant), Toast.LENGTH_SHORT).show();
                 return false;
             }
         });
@@ -115,7 +119,7 @@ public class carDashboard extends AppCompatActivity {
                 showMetricSelectionDialog(2);
                 return true;
             } else {
-                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(carDashboard.this, getString(R.string.data_on_cant), Toast.LENGTH_SHORT).show();
                 return false;
             }
         });
@@ -125,7 +129,7 @@ public class carDashboard extends AppCompatActivity {
                 showMetricSelectionDialog(3);
                 return true;
             } else {
-                Toast.makeText(carDashboard.this, "Live Data is ON. Cannot change gauges.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(carDashboard.this, getString(R.string.data_on_cant), Toast.LENGTH_SHORT).show();
                 return false;
             }
         });
@@ -136,11 +140,16 @@ public class carDashboard extends AppCompatActivity {
         connectionStatus = findViewById(R.id.connection_status);
         connectButton = findViewById(R.id.btnConnect);
 
-        bluetooth = new Bluetooth(this, connectionStatus);
+        bluetooth = Bluetooth.getInstance(getApplicationContext());
 
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String deviceAddress = preferences.getString("selected_device_address", "");
-        bluetooth.handleConnectButton(connectButton, deviceAddress);
+        bluetooth.handleConnectButton(connectButton, connectionStatus,deviceAddress);
+
+        if (bluetooth.isConnected()) {
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }
+
         //BLUETOOTH 2
 
         //DATABASE 1
@@ -164,7 +173,7 @@ public class carDashboard extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
+        //handler ktery dava hodnoty jednotlivym tachometrum
         handler = new Handler();
         obdPollingRunnable = new Runnable() {
             @Override
@@ -173,11 +182,9 @@ public class carDashboard extends AppCompatActivity {
                     runOnUiThread(() -> resetGauges());
                     return;
                 }
-
                 updateGaugeAsync(speedView1, gauge1Metric);
                 updateGaugeAsync(speedView2, gauge2Metric);
                 updateGaugeAsync(speedView3, gauge3Metric);
-
                 if (isPollingActive) {
                     handler.postDelayed(this, 300);
                 }
@@ -211,95 +218,6 @@ public class carDashboard extends AppCompatActivity {
         } catch (Expression.ExpressionException e) {
             Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
         }
-        /*
-        switch (metric) {
-            case RPM:
-                response = bluetooth.sendObdCommand("010C");
-                formula = parseResponse(response, dbHelper);
-                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
-                    Log.e("FormulaError", "Invalid formula for RPM: " + formula);
-                    return value;
-                }
-                try {
-                    Expression expression = new Expression(formula);
-                    BigDecimal result = expression.eval();
-                    value = result.floatValue();
-                    Log.d("OBD", "VALUERPM: " + value);
-                } catch (Expression.ExpressionException e) {
-                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
-                }
-                break;
-
-            case SPEED:
-                response = bluetooth.sendObdCommand("010D");
-                moretext.setText("DEBUG Response: " + response);
-                formula = parseResponse(response, dbHelper);
-                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
-                    Log.e("FormulaError", "Invalid formula for SPEED: " + formula);
-                    return value;
-                }
-                try {
-                    Expression expression = new Expression(formula);
-                    BigDecimal result = expression.eval();
-                    value = result.floatValue();
-                    Log.d("OBD", "VALUESPEED: " + value);
-                } catch (Expression.ExpressionException e) {
-                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
-                }
-                break;
-
-            case ENGINE_REFERENCE_TORQUE:
-                response = bluetooth.sendObdCommand("0163");
-
-                formula = parseResponse(response, dbHelper);
-                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
-                    Log.e("FormulaError", "Invalid formula for TORQUE: " + formula);
-                    return value;
-                }
-                try {
-                    Expression expression = new Expression(formula);
-                    BigDecimal result = expression.eval();
-                    value = result.floatValue();
-                    Log.d("OBD", "VALUETORQUE: " + value);
-                } catch (Expression.ExpressionException e) {
-                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
-                }
-
-
-                break;
-
-            case AVG_CONSUMPTION:
-
-                response = bluetooth.sendObdCommand("015F");
-                value = parseConsumption(response);
-
-
-                response = bluetooth.sendObdCommand("0131");
-                formula = parseResponse(response, dbHelper);
-                if (formula == null || formula.equals("Invalid response") || formula.equals("Unknown PID or format")) {
-                    Log.e("FormulaError", "Invalid formula for SPEED: " + formula);
-                    return value; // Return the default value or handle it
-                }
-                try {
-                    Expression expression = new Expression(formula);
-                    BigDecimal result = expression.eval();
-                    value = result.floatValue();
-                    Log.d("OBD", "VALUEAVG: " + value);
-                } catch (Expression.ExpressionException e) {
-                    Log.e("ExpressionError", "Formula evaluation error: " + e.getMessage());
-                }
-                break;
-            case CURRENT_CONSUMPTION:
-
-                response = bluetooth.sendObdCommand("015E");
-                value = parseConsumption(response);
-
-
-                break;
-
-        }
-        return value;
-    */
         return value;
     }
 
@@ -307,7 +225,7 @@ public class carDashboard extends AppCompatActivity {
         DatabaseHelper dbHelper = new DatabaseHelper(this);
         final String[] metrics = dbHelper.getAllMetricLabelsSortByID().toArray(new String[0]);
         new AlertDialog.Builder(this)
-                .setTitle("Select Metric")
+                .setTitle(getString(R.string.select_metric))
                 .setItems(metrics, (dialog, which) -> {
                     GaugeMetric selectedMetric = GaugeMetric.values()[which];
                     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -331,7 +249,7 @@ public class carDashboard extends AppCompatActivity {
                     editor.apply();
                     updateGaugeLabelsAndUnits();
                     updateGaugeLabelsText();
-
+                    resetGauges();
                 })
                 .show();
     }
@@ -367,7 +285,7 @@ public class carDashboard extends AppCompatActivity {
         animator.setDuration(150);
         animator.addUpdateListener(animation -> {
             int animatedValue = (int) animation.getAnimatedValue();
-            view.speedTo(animatedValue, 0);
+            view.speedTo(animatedValue, 300);//nastaveni jak smooth zmena hodnot je
         });
         animator.start();
     }
@@ -456,27 +374,21 @@ public class carDashboard extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         bluetooth.handlePermissionsResult(requestCode, permissions, grantResults);
     }
-        /*
     @Override
     protected void onResume() {
         super.onResume();
         if (bluetooth.isConnected()) {
-            connectionStatus.setText("OBD2 Status: Connected");
-            connectButton.setText("Disconnect");
-            switch1.setChecked(true);
-        } else {
-            switch1.setChecked(false);
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }else{
+            bluetooth.updateStatusView('d', connectButton, connectionStatus);
         }
     }
-
-         */
 
     @Override
     protected void onPause() {
         super.onPause();
         isPollingActive = false;
         handler.removeCallbacks(obdPollingRunnable);
-        bluetooth.disconnect();
         switch1.setChecked(false);
     }
 
@@ -486,7 +398,6 @@ public class carDashboard extends AppCompatActivity {
         super.onDestroy();
         isPollingActive = false;
         handler.removeCallbacksAndMessages(null);
-        bluetooth.disconnect();
         switch1.setChecked(false);
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow();

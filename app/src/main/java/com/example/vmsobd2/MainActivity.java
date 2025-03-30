@@ -2,13 +2,11 @@ package com.example.vmsobd2;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -18,7 +16,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 public class MainActivity extends AppCompatActivity {
-
     private Bluetooth bluetooth;
     private TextView connectionStatus;
     private Button connectButton;
@@ -30,14 +27,20 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         //BLUETOOTH 1
-        connectionStatus = findViewById(R.id.connection_status);
+
+        bluetooth = Bluetooth.getInstance(this);
+
+        // inicializace views
         connectButton = findViewById(R.id.btnConnect);
+        connectionStatus = findViewById(R.id.connection_status);
 
-        bluetooth = new Bluetooth(this, connectionStatus);
-
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String deviceAddress = preferences.getString("selected_device_address", "");
-        bluetooth.handleConnectButton(connectButton, deviceAddress);
+        // Connect when ready
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String deviceAddress = prefs.getString("selected_device_address", null);
+        bluetooth.handleConnectButton(connectButton, connectionStatus, deviceAddress);
+        if (bluetooth.isConnected()) {
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }
         //BLUETOOTH 2
 
 
@@ -75,25 +78,24 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
     }
-
+    //on resume tady nastavuje status dolniho toolbaru
     @Override
     protected void onResume() {
         super.onResume();
         if (bluetooth.isConnected()) {
-            connectionStatus.setText("OBD2 Status: Connected");
-            connectButton.setText("Disconnect");
+            bluetooth.updateStatusView('c', connectButton, connectionStatus);
+        }else{
+            bluetooth.updateStatusView('d', connectButton, connectionStatus);
         }
     }
     @Override
     protected void onPause(){
         super.onPause();
-        bluetooth.disconnect();
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        bluetooth.disconnect();
     }
 }

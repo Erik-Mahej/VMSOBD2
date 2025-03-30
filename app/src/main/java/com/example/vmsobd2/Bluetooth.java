@@ -1,19 +1,19 @@
 package com.example.vmsobd2;
 
-import static android.provider.Settings.System.getString;
-
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.preference.PreferenceManager;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -34,10 +35,10 @@ import java.util.UUID;
 //tuto tridu jsem nadale upravoval az do bodu kde z originalniho kodu zustavaji jen nazvy metod a promenych
 
 public class Bluetooth {
-    public static final int REQUEST_BLUETOOTH_CONNECT = 1;
-    //private static Bluetooth instance;
+    private static Bluetooth instance;
     private Context context;
-    private TextView connectionStatus;
+    public TextView connectionStatus;
+    private Button connectButton;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothSocket bluetoothSocket;
     private InputStream inputStream;
@@ -45,61 +46,103 @@ public class Bluetooth {
     private boolean isConnected = false;
 
     private static final UUID OBD2_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    public static final int REQUEST_BLUETOOTH_CONNECT = 1;
+    private WeakReference<Activity> activityRef;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    // Konstruktor tridy
-    public Bluetooth(Context context, TextView connectionStatus) {
-        this.context = context;
-        this.connectionStatus = connectionStatus;
+    // private konstruktor
+    private Bluetooth(Context context) {
+        this.context = context.getApplicationContext();
         this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     }
 
-    // Pokus o jednotne pripojeni k bluetooth
-    /*
-    public static Bluetooth getInstance(Context context, TextView connectionStatus) {
+    // singleton instance getter
+    public static synchronized Bluetooth getInstance(Context context) {
         if (instance == null) {
-            instance = new Bluetooth(context, connectionStatus);
+            instance = new Bluetooth(context);
+        }
+        // ulozeni kontextu aplikace pokud je dostupny
+        if (context instanceof Activity) {
+            instance.activityRef = new WeakReference<>((Activity) context);
         }
         return instance;
     }
+    private void runOnUiThread(Runnable action) {
+        Activity activity = activityRef.get();
+        if (activity != null && !activity.isFinishing()) {
+            activity.runOnUiThread(action);
+        } else {
+            mainHandler.post(action);
+        }
+    }
 
-     */
-    //tato metoda zajistuje aby aplikace nespadla v pripade ze neni povelene bluetooth nebo neni zvolene zarizeni
+        //tado metoda upravuje UI na aktivite
+    public void updateStatusView(char status, Button connectButton, TextView connectionStatus) {
+        mainHandler.post(() -> {
+            if (connectionStatus != null) {
+                switch (status) {
+                    case 'c': // connected
+                        connectionStatus.setText(context.getString(R.string.bt_conn));
+                        connectButton.setText(context.getString(R.string.disconnect));
+                        break;
+                    case 'd': // disconnected
+                        connectionStatus.setText(context.getString(R.string.bt_disconn));
+                        connectButton.setText(context.getString(R.string.connect));
+                        break;
+                    case 'f': // failed
+                        connectionStatus.setText(context.getString(R.string.bt_conn_fail));
+                        connectButton.setText(context.getString(R.string.connect));
+                        break;
+                    case 't': // connecting
+                        connectionStatus.setText(context.getString(R.string.bt_conntg));
+                        connectButton.setText(context.getString(R.string.connect));
+                        break;
+                    case 'n': // device adress je null
+                        connectionStatus.setText(context.getString(R.string.bt_nodevice));
+                        connectButton.setText(context.getString(R.string.connect));
+                        showToast(context.getString(R.string.toast_nodevice));
+                        break;
+                }
+            }
+        });
+    }
+
+
     public void handlePermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         if (requestCode == REQUEST_BLUETOOTH_CONNECT) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted
                 SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
                 String deviceAddress = preferences.getString("selected_device_address", null);
                 if (deviceAddress != null) {
-                    connect(deviceAddress);
-                    if (isConnected) {
-                        // Tady jeste patri upravovani tlacitka
-
-                    }
+                    //connect(deviceAddress);
                 } else {
-                    connectionStatus.setText( context.getString(R.string.bt_nodevice));
-                    Toast.makeText(context, context.getString(R.string.toast_nodevice), Toast.LENGTH_LONG).show();
+                    showStatusMessage(context.getString(R.string.bt_nodevice));
+                    showToast(context.getString(R.string.toast_nodevice));
                 }
             } else {
-                // Permission denied
-                connectionStatus.setText(context.getString(R.string.bt_denied));
-                Toast.makeText(context, context.getString(R.string.allow_in_settings), Toast.LENGTH_LONG).show();
+                showStatusMessage(context.getString(R.string.bt_denied));
+                showToast(context.getString(R.string.allow_in_settings));
             }
         }
     }
 
-    // Pripojeni k zarizeni
-    public void connect(String deviceAddress) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions((Activity) context, new String[]{Manifest.permission.BLUETOOTH_CONNECT}, 1);
+    public void connect(Button connectButton, TextView connectionStatus, String deviceAddress) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            Activity activity = activityRef.get();
+            if (activity != null && !activity.isFinishing()) {
+                ActivityCompat.requestPermissions(activity,
+                        new String[]{Manifest.permission.BLUETOOTH_CONNECT},
+                        REQUEST_BLUETOOTH_CONNECT);
+            }
             return;
         }
 
-        isConnected = false;
-
         new Thread(() -> {
             try {
-                ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conntg)));
+                runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conntg)));
+
                 BluetoothDevice device = bluetoothAdapter.getRemoteDevice(deviceAddress);
                 bluetoothSocket = device.createRfcommSocketToServiceRecord(OBD2_UUID);
                 bluetoothSocket.connect();
@@ -108,67 +151,59 @@ public class Bluetooth {
                 Thread.sleep(1500);
                 isConnected = true;
 
-
-                if (connectionStatus != null) {
-                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conn)));
-                }
-
-                initELM327(); //inicializace ELM327 komunikace
-            } catch (IOException e) {
+                runOnUiThread(() -> updateStatusView('c', connectButton, connectionStatus));
+                initELM327();
+            } catch (Exception e) {
                 isConnected = false;
-                if (connectionStatus != null) {
-                    ((Activity) context).runOnUiThread(() -> connectionStatus.setText(context.getString(R.string.bt_conn_fail)));
-                }
-                e.printStackTrace();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                if (deviceAddress==null){
+                    runOnUiThread(() -> updateStatusView('n', connectButton, connectionStatus));
+                }else {
+                    runOnUiThread(() -> updateStatusView('f', connectButton, connectionStatus));
+                }e.printStackTrace();
             }
         }).start();
     }
 
-
-    // Odpojeni od zarizeni
-    public void disconnect() {
+    public void disconnect(Button connectButton, TextView connectionStatus) {
         new Thread(() -> {
-            if (connectionStatus != null) {
-                connectionStatus.setText(context.getString(R.string.bt_disconntg));
-            }
+            showStatusMessage(context.getString(R.string.bt_disconntg));
             try {
                 if (bluetoothSocket != null) {
                     bluetoothSocket.close();
                 }
                 isConnected = false;
-                if (connectionStatus != null) {
-                    connectionStatus.setText(context.getString(R.string.bt_disconn));
-                }
+                updateStatusView('d',connectButton,connectionStatus);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }).start();
     }
 
-    // Kontrola pripojeni bluetooth
+    private void showStatusMessage(String message) {
+        if (connectionStatus != null) {
+            ((Activity) connectionStatus.getContext()).runOnUiThread(() ->
+                    connectionStatus.setText(message));
+        }
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+    }
+
     public boolean isConnected() {
         return isConnected;
     }
 
-    // Pouzivani buttonu na pripojeni/odpojeni od bluetooth zarizeni
-    public void handleConnectButton(Button connectButton, String deviceAddress) {
+    public void handleConnectButton(Button connectButton,TextView connectionStatus, String deviceAddress) {
         connectButton.setOnClickListener(view -> {
             if (!isConnected()) {
-                connect(deviceAddress);
-                connectButton.setText(context.getString(R.string.disconnect));
-                connectionStatus.setText(context.getString(R.string.bt_conn));
+                connect(connectButton,connectionStatus,deviceAddress);
             } else {
-                disconnect();
-                connectButton.setText(context.getString(R.string.connect));
-                connectionStatus.setText(context.getString(R.string.bt_disconn));
+                disconnect(connectButton,connectionStatus);
             }
         });
     }
 
-
-    //Posilani prikazu OB2 zarizeni
     public void sendCommand(String command) throws IOException {
         if (isConnected && outputStream != null) {
             clearInputBuffer();
@@ -178,7 +213,6 @@ public class Bluetooth {
         }
     }
 
-    // Cteni odpoveni od zarizeni
     public String readResponse() throws IOException {
         if (isConnected && inputStream != null) {
             StringBuilder response = new StringBuilder();
@@ -192,7 +226,6 @@ public class Bluetooth {
         return null;
     }
 
-    // Kombinace metod pro posilani a cteni komunikace
     public String sendObdCommand(String command) {
         try {
             sendCommand(command);
@@ -204,12 +237,12 @@ public class Bluetooth {
         }
     }
 
-    // Tato metoda pomaha cistit input
     private void clearInputBuffer() throws IOException {
         while (inputStream.available() > 0) {
             inputStream.read();
         }
     }
+
     private String cleanResponse(String raw) {
         return raw.replaceAll("[\r\n ]", "");
     }
