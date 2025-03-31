@@ -51,7 +51,7 @@
     <string name="faults_bt_not">Bluetooth is not connected. Please connect your OBD2 device.</string>
     <string name="scan_error">Scanning error occurred. Please try again.</string>
     <string name="scan_failed">Scanning failed</string>
-    <string name="scan_complete">Scanning failed</string>
+    <string name="scan_complete">Scanning Completed</string>
 
 
 
